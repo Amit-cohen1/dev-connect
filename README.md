@@ -1,70 +1,131 @@
-# Getting Started with Create React App
+# DevTogether
 
-This project was bootstrapped with [Create React App](https://github.com/facebook/create-react-app).
+DevTogether is a web application designed to connect early-career developers with non-profit organizations and companies, enabling them to gain real-world experience through meaningful projects. The platform facilitates project-based hiring by allowing companies to evaluate potential candidates through their project contributions.
 
-## Available Scripts
+## Table of Contents
 
-In the project directory, you can run:
+- [Technologies Used](#technologies-used)
+- [Features](#features)
+- [Installation](#installation)
+- [Project Structure](#project-structure)
+- [Usage](#usage)
+- [Contributing](#contributing)
+- [License](#license)
 
-### `npm start`
+## Technologies Used
 
-Runs the app in the development mode.\
-Open [http://localhost:3000](http://localhost:3000) to view it in your browser.
+- **Frontend:** React, React Router, Context API
+- **Backend & Services:** Firebase Authentication, Firestore Database, Firebase Storage, Firebase Hosting
+- **Styling:** Tailwind CSS, PostCSS
 
-The page will reload when you make changes.\
-You may also see any lint errors in the console.
+## Features
 
-### `npm test`
+- User authentication with Firebase (email/password, Google Sign-in)
+- Role-based access control for developers and organizations
+- Project creation and management system
+- Application system for developers to apply to projects
+- Real-time messaging between users
+- Notifications system for project updates and messages
+- Profile management with achievements and skill tracking
+- Avatar selection and customization
+- Secure route protection for authenticated users and organizations
 
-Launches the test runner in the interactive watch mode.\
-See the section about [running tests](https://facebook.github.io/create-react-app/docs/running-tests) for more information.
+## Installation
 
-### `npm run build`
+### Prerequisites
 
-Builds the app for production to the `build` folder.\
-It correctly bundles React in production mode and optimizes the build for the best performance.
+Ensure you have the following installed:
 
-The build is minified and the filenames include the hashes.\
-Your app is ready to be deployed!
+- Node.js (v16 or later)
+- npm or yarn
 
-See the section about [deployment](https://facebook.github.io/create-react-app/docs/deployment) for more information.
+### Steps
 
-### `npm run eject`
+1. Clone the repository:
+   ```sh
+   git clone https://github.com/your-repo/devtogether.git
+   cd devtogether
+   ```
+2. Install dependencies:
+   ```sh
+   npm install
+   ```
+3. Create a `.env` file and add your Firebase configuration:
+   ```env
+   REACT_APP_FIREBASE_API_KEY=your_api_key
+   REACT_APP_FIREBASE_AUTH_DOMAIN=your_auth_domain
+   REACT_APP_FIREBASE_PROJECT_ID=your_project_id
+   REACT_APP_FIREBASE_STORAGE_BUCKET=your_storage_bucket
+   REACT_APP_FIREBASE_MESSAGING_SENDER_ID=your_sender_id
+   REACT_APP_FIREBASE_APP_ID=your_app_id
+   ```
+4. Start the development server:
+   ```sh
+   npm start
+   ```
 
-**Note: this is a one-way operation. Once you `eject`, you can't go back!**
+## Project Structure
 
-If you aren't satisfied with the build tool and configuration choices, you can `eject` at any time. This command will remove the single build dependency from your project.
+```
+/src
+├── components/
+│   ├── auth/ (Authentication components)
+│   ├── Achievements.js (User achievements display)
+│   ├── AvatarSelector.js (Profile avatar selection)
+│   ├── Conversations.js (User messaging)
+│   ├── MessagingSystem.js (Messaging functionality)
+│   ├── Navbar.js (Navigation bar)
+│   ├── NotificationSystem.js (User notifications)
+│   ├── OrganizationRoute.js (Route protection for organizations)
+│   ├── PrivateRoute.js (Route protection for authenticated users)
+│   ├── ProjectApplications.js (Project applications management)
+│   └── OrganizationRegistration.js (Organization registration)
+├── context/
+│   └── AuthContext.js (User authentication context)
+├── firebase/
+│   └── config.js (Firebase configuration)
+├── pages/
+│   ├── Home.js (Landing page)
+│   ├── Login.js (User login page)
+│   ├── OrganizationPortal.js (Organization dashboard)
+│   ├── Profile.js (User profile)
+│   ├── ProjectDetail.js (Project details view)
+│   ├── Projects.js (Projects listing and search)
+│   ├── Register.js (User registration)
+│   ├── UploadProject.js (Project creation form)
+│   └── DeveloperRegistration.js (Developer registration)
+├── utils/
+│   └── notifications.js (Notification utilities)
+├── App.js (Main application entry)
+├── index.css (Global styles)
+└── index.js (Application entry point)
+```
 
-Instead, it will copy all the configuration files and the transitive dependencies (webpack, Babel, ESLint, etc) right into your project so you have full control over them. All of the commands except `eject` will still work, but they will point to the copied scripts so you can tweak them. At this point you're on your own.
+## Usage
 
-You don't have to ever use `eject`. The curated feature set is suitable for small and middle deployments, and you shouldn't feel obligated to use this feature. However we understand that this tool wouldn't be useful if you couldn't customize it when you are ready for it.
+### Running the App
 
-## Learn More
+1. Start the development server:
+   ```sh
+   npm start
+   ```
+2. Open `http://localhost:3000` in your browser.
 
-You can learn more in the [Create React App documentation](https://facebook.github.io/create-react-app/docs/getting-started).
+### Authentication
 
-To learn React, check out the [React documentation](https://reactjs.org/).
+- Users can register as **Developers** or **Organizations**.
+- Organizations can post projects and review applications.
+- Developers can browse and apply for projects.
 
-### Code Splitting
+### Messaging & Notifications
 
-This section has moved here: [https://facebook.github.io/create-react-app/docs/code-splitting](https://facebook.github.io/create-react-app/docs/code-splitting)
+- Real-time messaging system for project communication.
+- Notification system for project updates and messages.
 
-### Analyzing the Bundle Size
+## Contributing
 
-This section has moved here: [https://facebook.github.io/create-react-app/docs/analyzing-the-bundle-size](https://facebook.github.io/create-react-app/docs/analyzing-the-bundle-size)
+We welcome contributions! Please fork the repository and submit a pull request with your changes.
 
-### Making a Progressive Web App
+## License
 
-This section has moved here: [https://facebook.github.io/create-react-app/docs/making-a-progressive-web-app](https://facebook.github.io/create-react-app/docs/making-a-progressive-web-app)
-
-### Advanced Configuration
-
-This section has moved here: [https://facebook.github.io/create-react-app/docs/advanced-configuration](https://facebook.github.io/create-react-app/docs/advanced-configuration)
-
-### Deployment
-
-This section has moved here: [https://facebook.github.io/create-react-app/docs/deployment](https://facebook.github.io/create-react-app/docs/deployment)
-
-### `npm run build` fails to minify
-
-This section has moved here: [https://facebook.github.io/create-react-app/docs/troubleshooting#npm-run-build-fails-to-minify](https://facebook.github.io/create-react-app/docs/troubleshooting#npm-run-build-fails-to-minify)
+This project is licensed under the MIT License.
