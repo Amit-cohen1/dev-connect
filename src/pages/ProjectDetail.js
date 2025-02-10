@@ -9,6 +9,7 @@ import {
   addDoc 
 } from 'firebase/firestore';
 import ProjectApplicationForm from '../components/ProjectApplications';
+import ProjectComments from '../components/ProjectComments';
 import { sendApplicationStatusNotification, sendNewApplicationNotification } from '../utils/notifications';
 
 const ProjectDetail = () => {

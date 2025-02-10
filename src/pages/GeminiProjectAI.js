@@ -18,7 +18,7 @@ const GeminiProjectAI = () => {
     'Docker', 'Kubernetes', 'Machine Learning', 'AI'
   ];
 
-  const API_KEY = 'AIzaSyDMP3X-7sPJHCtgr1Kz26fItvmibga8Wmw';
+  const API_KEY = process.env.REACT_APP_GOOGLE_GEMINI_API_KEY;
   const GEMINI_API_URL = `https://generativelanguage.googleapis.com/v1beta/models/gemini-pro:generateContent?key=${API_KEY}`;
 
   useEffect(() => {

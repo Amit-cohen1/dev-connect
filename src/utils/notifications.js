@@ -32,6 +32,7 @@ export const sendNotification = async ({
 };
 
 export const notificationTypes = {
+  NEW_COMMENT: 'new_comment',
   NEW_MESSAGE: 'new_message',
   APPLICATION_STATUS: 'application_status',
   PROJECT_UPDATE: 'project_update',
