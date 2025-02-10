@@ -1,6 +1,5 @@
-// src/pages/UploadProject.js
-import { useState, useContext } from 'react';
-import { useNavigate } from 'react-router-dom';
+import { useState, useContext, useEffect, useCallback, useRef } from 'react';
+import { useNavigate, useLocation } from 'react-router-dom';
 import { db } from '../firebase/config';
 import { collection, addDoc, serverTimestamp } from 'firebase/firestore';
 import { AuthContext } from '../context/AuthContext';
@@ -8,8 +7,10 @@ import { AuthContext } from '../context/AuthContext';
 const UploadProject = () => {
   const { user } = useContext(AuthContext);
   const navigate = useNavigate();
+  const location = useLocation();
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
+  const submitTriggered = useRef(false);
 
   const [formData, setFormData] = useState({
     title: '',
@@ -20,7 +21,7 @@ const UploadProject = () => {
     timeEstimate: '',
     maxDevelopers: 1,
     githubRequired: false,
-    enrollmentType: 'direct' // 'direct', 'application', or 'hybrid'
+    enrollmentType: 'direct'
   });
 
   const technologies = [
@@ -30,20 +31,19 @@ const UploadProject = () => {
     'Docker', 'Kubernetes', 'Machine Learning', 'AI'
   ];
 
-  const handleTechnologyChange = (tech) => {
-    setFormData(prev => ({
-      ...prev,
-      technologies: prev.technologies.includes(tech)
-        ? prev.technologies.filter(t => t !== tech)
-        : [...prev.technologies, tech]
-    }));
-  };
-
-  const handleSubmit = async (e) => {
-    e.preventDefault();
+  const handleSubmit = useCallback(async (e) => {
+    if (e) {
+      e.preventDefault();
+    }
+  
+    // Prevent multiple submissions
+    if (loading) return;
+  
+    console.log('Submitting with formData:', formData); // Debug log
+  
     setError('');
     setLoading(true);
-
+  
     try {
       const projectData = {
         ...formData,
@@ -55,7 +55,9 @@ const UploadProject = () => {
         dateCreated: serverTimestamp(),
         dateUpdated: serverTimestamp()
       };
-
+  
+      console.log('Final projectData being sent to Firestore:', projectData); // Debug log
+  
       await addDoc(collection(db, 'projects'), projectData);
       navigate('/organization-portal');
     } catch (error) {
@@ -64,8 +66,42 @@ const UploadProject = () => {
     } finally {
       setLoading(false);
     }
+  }, [formData, user, navigate, loading]);
+
+    useEffect(() => {
+    const locationState = location.state;
+    console.log('UploadProject received state:', locationState);
+  
+    if (locationState?.formData) {
+      console.log('Setting form data:', locationState.formData);
+      setFormData(locationState.formData);
+    
+      // Create a second useEffect to handle auto-submit after formData is set
+      if (locationState.autoSubmit && !submitTriggered.current) {
+        submitTriggered.current = true;
+      }
+    }
+  }, [location]); // Remove handleSubmit dependency
+
+  // Separate useEffect for handling the auto-submit
+  useEffect(() => {
+    const locationState = location.state;
+    if (locationState?.autoSubmit && submitTriggered.current && formData.title) {
+      console.log('Auto-submitting with formData:', formData);
+      handleSubmit();
+    }
+  }, [formData, handleSubmit]); // This will run when formData actually changes
+
+  const handleTechnologyChange = (tech) => {
+    setFormData(prev => ({
+      ...prev,
+      technologies: prev.technologies.includes(tech)
+        ? prev.technologies.filter(t => t !== tech)
+        : [...prev.technologies, tech]
+    }));
   };
 
+  // Rest of the JSX remains exactly the same...
   return (
     <div className="max-w-4xl mx-auto py-12 px-4 sm:px-6 lg:px-8">
       <div className="bg-white shadow rounded-lg p-6">

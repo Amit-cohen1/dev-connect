@@ -57,6 +57,12 @@ const Navbar = () => {
               >
                 Projects
               </Link>
+              <Link
+                to="/gemini-project-ai"
+                className="text-gray-700 hover:text-blue-600 px-3 py-2 rounded-md text-sm font-medium"
+              >
+                Project AI
+              </Link>
             </div>
           </div>
 

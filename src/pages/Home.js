@@ -4,6 +4,7 @@ import { Link } from 'react-router-dom';
 import { db } from '../firebase/config';
 import { collection, query, orderBy, limit, getDocs, where, doc, getDoc } from 'firebase/firestore';
 import { AuthContext } from '../context/AuthContext';
+import axios from 'axios';
 
 const Home = () => {
   const { user } = useContext(AuthContext);
@@ -25,51 +26,67 @@ const Home = () => {
 
   const [hoveredTech, setHoveredTech] = useState(null);
 
-  useEffect(() => {
-    const fetchFeaturedProjects = async () => {
-      try {
-        const projectsQuery = query(
-          collection(db, 'projects'),
-          where('status', '==', 'open'),
-          orderBy('dateCreated', 'desc'),
-          limit(3)
-        );
+  const fetchFeaturedProjects = async () => {
+    try {
+      const projectsQuery = query(
+        collection(db, 'projects'),
+        where('status', '==', 'open'),
+        orderBy('dateCreated', 'desc'),
+        limit(3)
+      );
 
-        const projectsSnapshot = await getDocs(projectsQuery);
-        const projects = [];
+      const projectsSnapshot = await getDocs(projectsQuery);
+      const projects = [];
 
-        for (const docSnap of projectsSnapshot.docs) {
-          const project = { id: docSnap.id, ...docSnap.data() };
+      for (const docSnap of projectsSnapshot.docs) {
+        const project = { id: docSnap.id, ...docSnap.data() };
 
-          // Fetch organization logo using organizationId
-          if (project.organizationId) {
-            const organizationDoc = await getDoc(doc(db, 'users', project.organizationId));
-            if (organizationDoc.exists()) {
-              project.logoUrl = organizationDoc.data().logoUrl || null;
-            }
+        // Fetch a relevant image from Pexels API based on project title and description
+        const response = await axios.get('https://api.pexels.com/v1/search', {
+          headers: {
+            Authorization: 'X71OYZXaackKssLkOZ4P6INink0716ZxjdejGgLzrhwAWMuRHHRvlPif'
+          },
+          params: {
+            query: `${project.title} ${project.description}`,
+            per_page: 1,
+            page: Math.floor(Math.random() * 100) + 1
           }
-
-          projects.push(project);
-        }
-
-        setFeaturedProjects(projects);
-      } catch (error) {
-        console.error('Error fetching featured projects:', error);
-      }
-    };
-
-    const fetchStats = async () => {
-      try {
-        setStats({
-          totalProjects: 150,
-          completedProjects: 75,
-          activeDevs: 300,
         });
-      } catch (error) {
-        console.error('Error fetching stats:', error);
-      }
-    };
 
+        const imageUrl = response.data.photos[0]?.src?.medium || '/placeholder.jpg';
+        project.logoUrl = imageUrl;
+
+        projects.push(project);
+      }
+
+      setFeaturedProjects(projects);
+    } catch (error) {
+      console.error('Error fetching featured projects:', error);
+    }
+  };
+
+  const fetchStats = async () => {
+    try {
+      const projectsSnapshot = await getDocs(collection(db, 'projects'));
+      const projects = projectsSnapshot.docs.map(doc => doc.data());
+
+      const totalProjects = projects.length;
+      const completedProjects = projects.filter(project => project.status === 'completed').length;
+
+      const usersSnapshot = await getDocs(collection(db, 'users'));
+      const activeDevs = usersSnapshot.docs.filter(doc => doc.data().type === 'developer').length;
+
+      setStats({
+        totalProjects,
+        completedProjects,
+        activeDevs,
+      });
+    } catch (error) {
+      console.error('Error fetching stats:', error);
+    }
+  };
+
+  useEffect(() => {
     fetchFeaturedProjects();
     fetchStats();
   }, []);

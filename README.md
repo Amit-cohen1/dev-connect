@@ -122,9 +122,6 @@ Ensure you have the following installed:
 - Real-time messaging system for project communication.
 - Notification system for project updates and messages.
 
-## Contributing
-
-We welcome contributions! Please fork the repository and submit a pull request with your changes.
 
 ## License
 
