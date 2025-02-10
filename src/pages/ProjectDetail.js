@@ -5,8 +5,11 @@ import { AuthContext } from '../context/AuthContext';
 import { db } from '../firebase/config';
 import { 
   doc, getDoc, collection, query, where, getDocs,
-  updateDoc, arrayUnion, deleteDoc, serverTimestamp 
+  updateDoc, arrayUnion, deleteDoc, serverTimestamp,
+  addDoc 
 } from 'firebase/firestore';
+import ProjectApplicationForm from '../components/ProjectApplications';
+import { sendApplicationStatusNotification, sendNewApplicationNotification } from '../utils/notifications';
 
 const ProjectDetail = () => {
   const { projectId } = useParams();
@@ -18,6 +21,8 @@ const ProjectDetail = () => {
   const [activeTab, setActiveTab] = useState('details');
   const [isEditing, setIsEditing] = useState(false);
   const [editedProject, setEditedProject] = useState(null);
+  const [showApplicationForm, setShowApplicationForm] = useState(false);
+  const [hasApplied, setHasApplied] = useState(false);
 
   useEffect(() => {
     const fetchProjectData = async () => {
@@ -25,7 +30,7 @@ const ProjectDetail = () => {
         // Fetch project details
         const projectDoc = await getDoc(doc(db, 'projects', projectId));
         if (!projectDoc.exists()) {
-          navigate('/organization-portal');
+          navigate('/projects');
           return;
         }
 
@@ -33,15 +38,25 @@ const ProjectDetail = () => {
         setProject(projectData);
         setEditedProject(projectData);
 
+        // Check if user has already applied
+        if (user) {
+          const applicationQuery = query(
+            collection(db, 'projectApplications'),
+            where('projectId', '==', projectId),
+            where('userId', '==', user.uid)
+          );
+          const applicationSnapshot = await getDocs(applicationQuery);
+          setHasApplied(!applicationSnapshot.empty);
+        }
+
         // Fetch applications if it's the organization's project
-        if (projectData.organizationId === user.uid) {
+        if (projectData.organizationId === user?.uid) {
           const applicationsQuery = query(
             collection(db, 'projectApplications'),
             where('projectId', '==', projectId)
           );
           const applicationsSnapshot = await getDocs(applicationsQuery);
           
-          // Get applicant details for each application
           const applicationsData = await Promise.all(
             applicationsSnapshot.docs.map(async (appDoc) => {
               const userData = await getDoc(doc(db, 'users', appDoc.data().userId));
@@ -64,7 +79,7 @@ const ProjectDetail = () => {
     };
 
     fetchProjectData();
-  }, [projectId, user.uid, navigate]);
+  }, [projectId, user, navigate]);
 
   const handleUpdateProject = async () => {
     try {
@@ -81,14 +96,23 @@ const ProjectDetail = () => {
 
   const handleApplicationUpdate = async (applicationId, status) => {
     try {
+      const application = applications.find(app => app.id === applicationId);
+      
       await updateDoc(doc(db, 'projectApplications', applicationId), {
         status,
         updatedAt: serverTimestamp()
       });
 
+      // Send notification to applicant
+      await sendApplicationStatusNotification(
+        application.userId,
+        projectId,
+        project.title,
+        status
+      );
+
       // If accepted, add developer to project
       if (status === 'accepted') {
-        const application = applications.find(app => app.id === applicationId);
         await updateDoc(doc(db, 'projects', projectId), {
           assignedDevelopers: arrayUnion({
             userId: application.userId,
@@ -151,7 +175,7 @@ const ProjectDetail = () => {
               Created {new Date(project.dateCreated.toDate()).toLocaleDateString()}
             </p>
           </div>
-          {project.organizationId === user.uid && (
+          {project.organizationId === user?.uid ? (
             <div className="flex space-x-2">
               {isEditing ? (
                 <>
@@ -188,6 +212,20 @@ const ProjectDetail = () => {
                 </>
               )}
             </div>
+          ) : (
+            user && (
+              <button
+                onClick={() => setShowApplicationForm(true)}
+                disabled={hasApplied}
+                className={`${
+                  hasApplied
+                    ? 'bg-gray-300 cursor-not-allowed'
+                    : 'bg-blue-600 hover:bg-blue-700'
+                } text-white px-4 py-2 rounded-md`}
+              >
+                {hasApplied ? 'Already Applied' : 'Apply Now'}
+              </button>
+            )
           )}
         </div>
       </div>
@@ -205,7 +243,7 @@ const ProjectDetail = () => {
           >
             Project Details
           </button>
-          {project.organizationId === user.uid && (
+          {project.organizationId === user?.uid && (
             <button
               onClick={() => setActiveTab('applications')}
               className={`${
@@ -281,35 +319,75 @@ const ProjectDetail = () => {
 
         {activeTab === 'applications' && (
           <div className="divide-y divide-gray-200">
-            {applications.map((application) => (
-              <div key={application.id} className="p-6">
-                <div className="flex justify-between items-start">
-                  <div>
-                    <h3 className="text-lg font-medium text-gray-900">
-                      {application.user.name}
-                    </h3>
-                    <p className="mt-1 text-sm text-gray-500">
-                      Applied: {new Date(application.dateApplied.toDate()).toLocaleDateString()}
-                    </p>
-                    <p className="mt-2 text-gray-700">{application.coverLetter}</p>
-                  </div>
-                  <div className="flex items-center space-x-2">
-                    <select
-                      value={application.status}
-                      onChange={(e) => handleApplicationUpdate(application.id, e.target.value)}
-                      className="rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500"
-                    >
-                      <option value="pending">Pending</option>
-                      <option value="accepted">Accept</option>
-                      <option value="rejected">Reject</option>
-                    </select>
+            {applications.length === 0 ? (
+              <div className="p-6 text-center text-gray-500">
+                No applications received yet
+              </div>
+            ) : (
+              applications.map((application) => (
+                <div key={application.id} className="p-6">
+                  <div className="flex justify-between items-start">
+                    <div>
+                      <h3 className="text-lg font-medium text-gray-900">
+                        {application.userName}
+                      </h3>
+                      <p className="mt-1 text-sm text-gray-500">
+                        Applied: {new Date(application.dateApplied.toDate()).toLocaleDateString()}
+                      </p>
+                      <p className="mt-2 text-gray-700">{application.coverLetter}</p>
+                      <div className="mt-4 space-x-4">
+                        {application.portfolio && (
+                          <a
+                            href={application.portfolio}
+                            target="_blank"
+                            rel="noopener noreferrer"
+                            className="text-blue-600 hover:text-blue-500"
+                          >
+                            Portfolio ↗
+                          </a>
+                        )}
+                        {application.githubProfile && (
+                          <a
+                            href={application.githubProfile}
+                            target="_blank"
+                            rel="noopener noreferrer"
+                            className="text-blue-600 hover:text-blue-500"
+                          >
+                            GitHub ↗
+                          </a>
+                        )}
+                      </div>
+                    </div>
+                    <div className="flex items-center space-x-2">
+                      <select
+                        value={application.status}
+                        onChange={(e) => handleApplicationUpdate(application.id, e.target.value)}
+                        className="rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500"
+                      >
+                        <option value="pending">Pending</option>
+                        <option value="accepted">Accept</option>
+                        <option value="rejected">Reject</option>
+                      </select>
+                    </div>
                   </div>
                 </div>
-              </div>
-            ))}
+              ))
+            )}
           </div>
         )}
       </div>
+
+      {/* Application Form Modal */}
+      {showApplicationForm && (
+        <ProjectApplicationForm
+          project={project}
+          onClose={() => setShowApplicationForm(false)}
+          onSubmitSuccess={() => {
+            setShowApplicationForm(false);
+            setHasApplied(true);
+          }}
+        />
+      )}
     </div>
   );
 };

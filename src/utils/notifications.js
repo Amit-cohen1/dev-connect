@@ -21,6 +21,7 @@ export const sendNotification = async ({
       projectTitle,
       senderName,
       status,
+      link: projectId ? `/project/${projectId}` : null, // Fixed URL pattern here
       read: false,
       timestamp: serverTimestamp(),
       ...additionalData
@@ -38,7 +39,6 @@ export const notificationTypes = {
   GENERAL: 'general'
 };
 
-// Usage examples:
 export const sendMessageNotification = async (userId, senderName, projectId, projectTitle) => {
   await sendNotification({
     userId,

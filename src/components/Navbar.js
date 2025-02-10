@@ -4,6 +4,7 @@ import { Link, useNavigate } from 'react-router-dom';
 import { AuthContext } from '../context/AuthContext';
 import { doc, getDoc } from 'firebase/firestore';
 import { db } from '../firebase/config';
+import NotificationSystem from './NotificationSystem';
 
 const Navbar = () => {
   const { user, signOut } = useContext(AuthContext);
@@ -69,6 +70,11 @@ const Navbar = () => {
           <div className="flex items-center space-x-4">
             {user ? (
               <>
+                {/* Notifications Icon - Only show when user is logged in */}
+                <div className="flex items-center">
+                  <NotificationSystem />
+                </div>
+
                 {userData?.type === 'organization' && (
                   <Link
                     to="/organization-portal"

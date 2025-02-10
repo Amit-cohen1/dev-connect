@@ -77,7 +77,7 @@ function App() {
           </main>
           {/* Footer */}
           <Footer />
-        </div>
+       </div>
       </AuthProvider>
     </Router>
   );

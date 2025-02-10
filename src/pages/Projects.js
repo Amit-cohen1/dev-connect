@@ -1,13 +1,19 @@
 // src/pages/Projects.js
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useContext } from 'react';
 import { useNavigate } from 'react-router-dom';
+import { AuthContext } from '../context/AuthContext';
 import { db } from '../firebase/config';
 import { collection, query, where, getDocs, orderBy } from 'firebase/firestore';
+import ProjectApplicationForm from '../components/ProjectApplications';
 
 const Projects = () => {
   const navigate = useNavigate();
+  const { user } = useContext(AuthContext);
   const [projects, setProjects] = useState([]);
+  const [userApplications, setUserApplications] = useState({});
   const [loading, setLoading] = useState(true);
+  const [showApplicationForm, setShowApplicationForm] = useState(false);
+  const [selectedProject, setSelectedProject] = useState(null);
   const [filters, setFilters] = useState({
     search: '',
     technology: '',
@@ -16,16 +22,15 @@ const Projects = () => {
   });
 
   const technologies = [
-    'React', 'Node.js', 'Python', 'Java', 'JavaScript',
-    'Firebase', 'AWS', 'MongoDB', 'SQL', 'Other'
+    'React', 'Angular', 'Vue', 'Node.js', 'Python',
+    'Java', 'C#', '.NET', 'PHP', 'Ruby',
+    'AWS', 'Azure', 'Firebase', 'MongoDB', 'SQL',
+    'Docker', 'Kubernetes', 'Machine Learning', 'AI'
   ];
 
   const difficulties = ['Beginner', 'Intermediate', 'Advanced'];
 
-  useEffect(() => {
-    fetchProjects();
-  }, [filters.status]); // Re-fetch when status filter changes
-
+  // Fetch projects based on filters
   const fetchProjects = async () => {
     setLoading(true);
     try {
@@ -41,7 +46,7 @@ const Projects = () => {
         ...doc.data()
       }));
 
-      // Client-side filtering
+      // Apply client-side filters
       if (filters.search) {
         const searchLower = filters.search.toLowerCase();
         projectsData = projectsData.filter(project =>
@@ -58,7 +63,7 @@ const Projects = () => {
 
       if (filters.difficulty) {
         projectsData = projectsData.filter(project =>
-          project.difficulty === filters.difficulty
+          project.difficulty === filters.difficulty.toLowerCase()
         );
       }
 
@@ -70,6 +75,37 @@ const Projects = () => {
     }
   };
 
+  // Fetch user's applications
+  const fetchUserApplications = async () => {
+    if (!user) return;
+
+    try {
+      const applicationsQuery = query(
+        collection(db, 'projectApplications'),
+        where('userId', '==', user.uid)
+      );
+      const snapshot = await getDocs(applicationsQuery);
+      const applications = {};
+      snapshot.forEach(doc => {
+        const data = doc.data();
+        applications[data.projectId] = data.status;
+      });
+      setUserApplications(applications);
+    } catch (error) {
+      console.error('Error fetching user applications:', error);
+    }
+  };
+
+  // Initial data fetch
+  useEffect(() => {
+    fetchProjects();
+  }, [filters.status]);
+
+  // Fetch user applications when user is logged in
+  useEffect(() => {
+    fetchUserApplications();
+  }, [user]);
+
   const handleSearch = (e) => {
     e.preventDefault();
     fetchProjects();
@@ -79,10 +115,67 @@ const Projects = () => {
     navigate(`/project/${projectId}`);
   };
 
-  const handleApplyClick = (e, projectId) => {
-    e.stopPropagation(); // Prevent card click when clicking the button
-    // Add your apply logic here
-    console.log('Applying to project:', projectId);
+  const handleApplyClick = (e, project) => {
+    e.stopPropagation();
+    if (!user) {
+      navigate('/login');
+      return;
+    }
+    setSelectedProject(project);
+    setShowApplicationForm(true);
+  };
+
+  const getApplicationStatus = (projectId) => {
+    return userApplications[projectId] || null;
+  };
+
+  const renderApplicationButton = (project) => {
+    if (!user) {
+      return (
+        <button
+          onClick={(e) => handleApplyClick(e, project)}
+          className="bg-blue-600 text-white px-4 py-2 rounded-md hover:bg-blue-700 transition-colors duration-200"
+        >
+          Sign in to Apply
+        </button>
+      );
+    }
+
+    if (project.organizationId === user.uid) {
+      return (
+        <button
+          className="bg-gray-100 text-gray-600 px-4 py-2 rounded-md cursor-not-allowed"
+          disabled
+        >
+          Your Project
+        </button>
+      );
+    }
+
+    const applicationStatus = getApplicationStatus(project.id);
+    
+    if (applicationStatus) {
+      const statusColors = {
+        pending: 'bg-yellow-100 text-yellow-800',
+        accepted: 'bg-green-100 text-green-800',
+        rejected: 'bg-red-100 text-red-800'
+      };
+
+      return (
+        <span className={`px-4 py-2 rounded-md ${statusColors[applicationStatus]}`}>
+          {applicationStatus.charAt(0).toUpperCase() + applicationStatus.slice(1)}
+        </span>
+      );
+    }
+
+    return (
+      <button
+        onClick={(e) => handleApplyClick(e, project)}
+        className="bg-blue-600 text-white px-4 py-2 rounded-md hover:bg-blue-700 transition-colors duration-200"
+      >
+        Apply Now
+      </button>
+    );
   };
 
   return (
@@ -190,7 +283,7 @@ const Projects = () => {
                   <h3 className="text-xl font-semibold text-gray-900">
                     {project.title}
                   </h3>
-                  <span className={`px-2 py-1 text-sm rounded-full ${
+                  <span className={`px-2 py-1 text-xs font-medium rounded-full ${
                     project.status === 'open' 
                       ? 'bg-green-100 text-green-800'
                       : project.status === 'in-progress'
@@ -216,21 +309,40 @@ const Projects = () => {
                   ))}
                 </div>
 
+                <div className="mt-4 flex items-center justify-between text-sm text-gray-500">
+                  <div>
+                    <span>🕒 {project.timeEstimate}</span>
+                    <span className="mx-2">•</span>
+                    <span className="capitalize">{project.difficulty} Level</span>
+                  </div>
+                </div>
+
                 <div className="mt-4 flex justify-between items-center">
                   <span className="text-sm text-gray-500">
-                    Posted by {project.organizationName}
+                    {project.organizationName}
                   </span>
-                  <button
-                    className="bg-blue-600 text-white px-4 py-2 rounded-md hover:bg-blue-700 transition-colors duration-200"
-                    onClick={(e) => handleApplyClick(e, project.id)}
-                  >
-                    Apply Now
-                  </button>
+                  {renderApplicationButton(project)}
                 </div>
               </div>
             </div>
           ))}
         </div>
+      )}
+
+      {/* Application Form Modal */}
+      {showApplicationForm && selectedProject && (
+        <ProjectApplicationForm
+          project={selectedProject}
+          onClose={() => {
+            setShowApplicationForm(false);
+            setSelectedProject(null);
+          }}
+          onSubmitSuccess={() => {
+            setShowApplicationForm(false);
+            setSelectedProject(null);
+            fetchUserApplications();
+          }}
+        />
       )}
     </div>
   );

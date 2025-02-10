@@ -4,11 +4,18 @@ import { Link } from 'react-router-dom';
 import { AuthContext } from '../context/AuthContext';
 import { db } from '../firebase/config';
 import { 
-  collection, query, where, orderBy, limit, 
-  onSnapshot, updateDoc, doc 
+  collection, 
+  query, 
+  where, 
+  orderBy, 
+  limit, 
+  onSnapshot,
+  updateDoc,
+  doc,
+  deleteDoc
 } from 'firebase/firestore';
 
-const NotificationItem = ({ notification, onMarkAsRead }) => {
+const NotificationItem = ({ notification, onMarkAsRead, onDelete }) => {
   const getNotificationContent = () => {
     switch (notification.type) {
       case 'new_message':
@@ -21,19 +28,19 @@ const NotificationItem = ({ notification, onMarkAsRead }) => {
         return {
           icon: '📝',
           message: `Your application for "${notification.projectTitle}" was ${notification.status}`,
-          link: `/projects/${notification.projectId}`
+          link: `/project/${notification.projectId}`
         };
       case 'project_update':
         return {
           icon: '🔄',
           message: `Project "${notification.projectTitle}" has been updated`,
-          link: `/projects/${notification.projectId}`
+          link: `/project/${notification.projectId}`
         };
       case 'new_application':
         return {
           icon: '👋',
           message: `New application received for "${notification.projectTitle}"`,
-          link: `/projects/${notification.projectId}/applications`
+          link: `/project/${notification.projectId}`
         };
       default:
         return {
@@ -47,7 +54,7 @@ const NotificationItem = ({ notification, onMarkAsRead }) => {
   const content = getNotificationContent();
 
   return (
-    <div className={`p-4 hover:bg-gray-50 ${notification.read ? 'opacity-75' : ''}`}>
+    <div className={`p-4 hover:bg-gray-50 relative group ${notification.read ? 'opacity-75' : ''}`}>
       <Link 
         to={content.link}
         className="flex items-start space-x-3"
@@ -62,12 +69,43 @@ const NotificationItem = ({ notification, onMarkAsRead }) => {
             {new Date(notification.timestamp?.toDate()).toLocaleString()}
           </p>
         </div>
-        {!notification.read && (
-          <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-blue-100 text-blue-800">
-            New
-          </span>
-        )}
       </Link>
+
+      {/* Action buttons - appear on hover */}
+      <div className="absolute right-2 top-1/2 transform -translate-y-1/2 opacity-0 group-hover:opacity-100 flex space-x-2 transition-opacity">
+        {!notification.read && (
+          <button
+            onClick={(e) => {
+              e.stopPropagation();
+              onMarkAsRead(notification.id);
+            }}
+            className="text-blue-600 hover:text-blue-800 p-1 rounded"
+            title="Mark as read"
+          >
+            <svg className="h-4 w-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M5 13l4 4L19 7" />
+            </svg>
+          </button>
+        )}
+        <button
+          onClick={(e) => {
+            e.stopPropagation();
+            onDelete(notification.id);
+          }}
+          className="text-red-600 hover:text-red-800 p-1 rounded"
+          title="Delete"
+        >
+          <svg className="h-4 w-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
+          </svg>
+        </button>
+      </div>
+
+      {!notification.read && (
+        <span className="absolute right-2 top-2 inline-flex items-center justify-center px-2 py-1 text-xs font-bold leading-none text-blue-600 bg-blue-100 rounded-full">
+          New
+        </span>
+      )}
     </div>
   );
 };
@@ -111,6 +149,14 @@ const NotificationSystem = () => {
     }
   };
 
+  const handleDelete = async (notificationId) => {
+    try {
+      await deleteDoc(doc(db, 'notifications', notificationId));
+    } catch (error) {
+      console.error('Error deleting notification:', error);
+    }
+  };
+
   const handleMarkAllAsRead = async () => {
     try {
       const unreadNotifications = notifications.filter(n => !n.read);
@@ -123,6 +169,21 @@ const NotificationSystem = () => {
       );
     } catch (error) {
       console.error('Error marking all notifications as read:', error);
+    }
+  };
+
+  const handleClearAll = async () => {
+    if (window.confirm('Are you sure you want to delete all notifications?')) {
+      try {
+        await Promise.all(
+          notifications.map(notification =>
+            deleteDoc(doc(db, 'notifications', notification.id))
+          )
+        );
+        setIsOpen(false);
+      } catch (error) {
+        console.error('Error clearing notifications:', error);
+      }
     }
   };
 
@@ -157,14 +218,24 @@ const NotificationSystem = () => {
           <div className="p-4 border-b border-gray-200">
             <div className="flex items-center justify-between">
               <h3 className="text-lg font-medium text-gray-900">Notifications</h3>
-              {unreadCount > 0 && (
-                <button
-                  onClick={handleMarkAllAsRead}
-                  className="text-sm text-blue-600 hover:text-blue-500"
-                >
-                  Mark all as read
-                </button>
-              )}
+              <div className="flex space-x-2">
+                {unreadCount > 0 && (
+                  <button
+                    onClick={handleMarkAllAsRead}
+                    className="text-sm text-blue-600 hover:text-blue-500"
+                  >
+                    Mark all as read
+                  </button>
+                )}
+                {notifications.length > 0 && (
+                  <button
+                    onClick={handleClearAll}
+                    className="text-sm text-red-600 hover:text-red-500"
+                  >
+                    Clear all
+                  </button>
+                )}
+              </div>
             </div>
           </div>
 
@@ -179,6 +250,7 @@ const NotificationSystem = () => {
                   key={notification.id}
                   notification={notification}
                   onMarkAsRead={handleMarkAsRead}
+                  onDelete={handleDelete}
                 />
               ))
             )}
