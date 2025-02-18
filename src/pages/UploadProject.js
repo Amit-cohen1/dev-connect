@@ -25,10 +25,37 @@ const UploadProject = () => {
   });
 
   const technologies = [
-    'React', 'Angular', 'Vue', 'Node.js', 'Python',
-    'Java', 'C#', '.NET', 'PHP', 'Ruby',
-    'AWS', 'Azure', 'Firebase', 'MongoDB', 'SQL',
-    'Docker', 'Kubernetes', 'Machine Learning', 'AI'
+    // Frontend Frameworks & Libraries
+    'React', 'Angular', 'Vue', 'Svelte', 'Next.js', 'Nuxt.js', 'Gatsby',
+    'React Native', 'Flutter', 'Ionic', 'Electron',
+    
+    // Backend Technologies
+    'Node.js', 'Python', 'Java', 'C#', '.NET', 'PHP', 'Ruby', 'Go', 'Rust',
+    'Spring Boot', 'Django', 'Flask', 'Laravel', 'Express.js', 'NestJS',
+    
+    // Cloud & Infrastructure
+    'AWS', 'Azure', 'Firebase', 'Google Cloud', 'Heroku', 'DigitalOcean',
+    'Docker', 'Kubernetes', 'Terraform', 'Jenkins',
+    
+    // Databases
+    'MongoDB', 'PostgreSQL', 'MySQL', 'SQL Server', 'Redis', 'Cassandra',
+    'GraphQL', 'DynamoDB', 'SQLite',
+    
+    // Mobile Development
+    'iOS', 'Android', 'Kotlin', 'Swift', 'Xamarin',
+    
+    // Frontend Technologies
+    'TypeScript', 'JavaScript', 'HTML5', 'CSS3', 'Sass', 'Tailwind CSS',
+    'Bootstrap', 'Material UI', 'Redux', 'WebPack',
+    
+    // Testing & Quality
+    'Jest', 'Cypress', 'Selenium', 'JUnit', 'PyTest',
+    
+    // AI & ML
+    'Machine Learning', 'AI', 'TensorFlow', 'PyTorch', 'OpenAI',
+    
+    // Version Control & DevOps
+    'Git', 'GitHub Actions', 'GitLab CI', 'Jira', 'Agile'
   ];
 
   const handleSubmit = useCallback(async (e) => {

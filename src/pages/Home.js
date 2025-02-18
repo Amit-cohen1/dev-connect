@@ -128,32 +128,132 @@ const Home = () => {
     <div className="min-h-screen bg-gray-50">
       {/* Hero Section */}
       <div
-        className="bg-cover bg-center bg-no-repeat"
+        className="bg-cover bg-center bg-no-repeat bg-fixed relative"
         style={{
           backgroundImage: "url('/HeroBackground.jpg')",
+          minHeight: "80vh",
         }}
       >
-        <div className="bg-blue-600/70">
-          <div className="max-w-7xl mx-auto py-16 px-4 sm:py-24 sm:px-6 lg:px-8">
-            <div className="text-center">
-              <h1 className="text-4xl font-extrabold text-white sm:text-5xl sm:tracking-tight lg:text-6xl">
-                Empowering Developers, Supporting Non-Profits
+        <div className="absolute inset-0 bg-gradient-to-br from-blue-900/90 via-blue-800/85 to-blue-600/80 backdrop-blur-sm"></div>
+        <div className="relative">
+          <div className="max-w-7xl mx-auto py-20 px-4 sm:py-32 sm:px-6 lg:px-8 flex flex-col items-center">
+            <div className="text-center max-w-4xl mx-auto">
+              <h1 className="text-4xl font-extrabold text-white sm:text-5xl sm:tracking-tight lg:text-6xl drop-shadow-lg animate-fade-in-down">
+                Empowering Developers,<br/>
+                <span className="text-blue-200">Supporting Non-Profits</span>
               </h1>
-              <p className="mt-6 max-w-2xl mx-auto text-xl text-blue-100">
+              <p className="mt-8 text-xl text-blue-100 leading-relaxed max-w-3xl mx-auto animate-fade-in-up">
                 Connect with meaningful projects, gain real-world experience, and make a difference
-                while building your portfolio.
+                while building your portfolio. Join our community of passionate developers.
               </p>
-              <div className="mt-10 flex justify-center gap-4">
+              <div className="mt-12 flex flex-col sm:flex-row justify-center gap-4 animate-fade-in">
                 <Link
                   to="/projects"
-                  className="bg-white text-blue-600 px-8 py-3 rounded-md font-medium hover:bg-blue-50"
+                  className="group relative inline-flex items-center justify-center px-8 py-3 bg-white text-blue-600 font-medium rounded-md overflow-hidden transition-all duration-300 ease-out hover:bg-blue-50 hover:scale-105 transform"
                 >
-                  Browse Projects
+                  <span className="relative">Browse Projects</span>
                 </Link>
                 {renderActionButton()}
               </div>
+              <div className="mt-16 grid grid-cols-2 gap-8 sm:grid-cols-3 animate-fade-in-up">
+                <div className="text-center">
+                  <div className="text-4xl font-bold text-white mb-2">{stats.totalProjects}</div>
+                  <div className="text-blue-200">Total Projects</div>
+                </div>
+                <div className="text-center">
+                  <div className="text-4xl font-bold text-white mb-2">{stats.completedProjects}</div>
+                  <div className="text-blue-200">Completed Projects</div>
+                </div>
+                <div className="text-center">
+                  <div className="text-4xl font-bold text-white mb-2">{stats.activeDevs}</div>
+                  <div className="text-blue-200">Active Developers</div>
+                </div>
+              </div>
             </div>
           </div>
+        </div>
+      </div>
+
+      {/* Featured Projects Section */}
+      <div className="max-w-7xl mx-auto py-20 px-4 sm:px-6 lg:px-8">
+        <div className="flex justify-between items-center mb-12">
+          <div>
+            <h2 className="text-3xl font-bold text-gray-900">Featured Projects</h2>
+            <p className="mt-2 text-gray-600">Explore our hand-picked selection of impactful projects</p>
+          </div>
+          <Link
+            to="/projects"
+            className="inline-flex items-center text-blue-600 hover:text-blue-500 font-medium group"
+          >
+            View All Projects
+            <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5 ml-2 transform transition-transform group-hover:translate-x-1" viewBox="0 0 20 20" fill="currentColor">
+              <path fillRule="evenodd" d="M10.293 3.293a1 1 0 011.414 0l6 6a1 1 0 010 1.414l-6 6a1 1 0 01-1.414-1.414L14.586 11H3a1 1 0 110-2h11.586l-4.293-4.293a1 1 0 010-1.414z" clipRule="evenodd" />
+            </svg>
+          </Link>
+        </div>
+        <div className="grid grid-cols-1 gap-8 sm:grid-cols-2 lg:grid-cols-3">
+          {featuredProjects.map((project) => (
+            <div
+              key={project.id}
+              className="bg-white rounded-xl shadow-lg overflow-hidden transform transition-all duration-300 hover:scale-105 hover:shadow-xl"
+            >
+              <div className="relative">
+                <img
+                  src={project.logoUrl || '/placeholder.jpg'}
+                  alt={`${project.organizationName || 'Organization'} Logo`}
+                  className="h-48 w-full object-cover"
+                />
+                <div className="absolute inset-0 bg-gradient-to-t from-black/60 to-transparent"></div>
+                <div className="absolute bottom-4 left-4 right-4">
+                  <div className="flex justify-between items-center text-white">
+                    <h3 className="text-lg font-semibold">{project.title}</h3>
+                    <div className="flex items-center space-x-1 bg-yellow-400/90 px-2 py-1 rounded-full">
+                      <span>⭐</span>
+                      <span className="font-medium">{project.rating || '4.5'}</span>
+                    </div>
+                  </div>
+                </div>
+              </div>
+              <div className="p-6">
+                <p className="text-gray-600 line-clamp-2 mb-4">{project.description}</p>
+                <div className="flex flex-wrap gap-2 mb-4">
+                  {project.technologies?.slice(0, 3).map((tech, index) => (
+                    <span
+                      key={index}
+                      className="bg-blue-50 text-blue-600 px-3 py-1 rounded-full text-sm font-medium"
+                    >
+                      {tech}
+                    </span>
+                  ))}
+                  {project.technologies?.length > 3 && (
+                    <span className="bg-gray-50 text-gray-600 px-3 py-1 rounded-full text-sm font-medium">
+                      +{project.technologies.length - 3} more
+                    </span>
+                  )}
+                </div>
+                <div className="flex justify-between items-center text-sm text-gray-600 mb-4">
+                  <span className="flex items-center">
+                    <svg className="h-5 w-5 mr-1 text-blue-500" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z" />
+                    </svg>
+                    {project.timeEstimate || '3 months'}
+                  </span>
+                  <span className="flex items-center">
+                    <svg className="h-5 w-5 mr-1 text-blue-500" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857M7 20H2v-2a3 3 0 015.356-1.857M7 20v-2c0-.656.126-1.283.356-1.857m0 0a5.002 5.002 0 019.288 0M15 7a3 3 0 11-6 0 3 3 0 016 0zm6 3a2 2 0 11-4 0 2 2 0 014 0zM7 10a2 2 0 11-4 0 2 2 0 014 0z" />
+                    </svg>
+                    {project.maxDevelopers || '5'} devs
+                  </span>
+                </div>
+                <Link
+                  to={`/project/${project.id}`}
+                  className="block w-full text-center bg-blue-600 text-white py-2 rounded-lg font-medium hover:bg-blue-700 transition-colors duration-300"
+                >
+                  View Details
+                </Link>
+              </div>
+            </div>
+          ))}
         </div>
       </div>
 
@@ -181,62 +281,6 @@ const Home = () => {
         </div>
       </div>
 
-      {/* Featured Projects Section */}
-      <div className="max-w-7xl mx-auto py-16 px-4 sm:px-6 lg:px-8">
-        <div className="flex justify-between items-center mb-6">
-          <h2 className="text-3xl font-bold text-gray-900">Featured Projects</h2>
-          <Link
-            to="/projects"
-            className="text-blue-500 hover:text-blue-400 font-medium"
-          >
-            View All Projects →
-          </Link>
-        </div>
-        <div className="grid grid-cols-1 gap-8 sm:grid-cols-2 lg:grid-cols-3">
-          {featuredProjects.map((project) => (
-            <div
-              key={project.id}
-              className="bg-white rounded-lg shadow-lg overflow-hidden"
-            >
-              <img
-                src={project.logoUrl || '/placeholder.jpg'} // Dynamically fetched logoUrl
-                alt={`${project.organizationName || 'Organization'} Logo`}
-                className="h-48 w-full object-contain bg-gray-100"
-              />
-              <div className="p-6">
-                <div className="flex justify-between items-center">
-                  <h3 className="text-lg font-semibold text-gray-900">{project.title}</h3>
-                  <div className="flex items-center space-x-1 text-yellow-500 text-sm">
-                    <span>⭐</span>
-                    <span>{project.rating || '4.5'}</span>
-                  </div>
-                </div>
-                <p className="mt-2 text-gray-600 line-clamp-2">{project.description}</p>
-                <div className="mt-4 flex flex-wrap gap-2">
-                  {project.technologies?.map((tech, index) => (
-                    <span
-                      key={index}
-                      className="bg-blue-100 text-blue-600 px-2 py-1 rounded-full text-sm"
-                    >
-                      {tech}
-                    </span>
-                  ))}
-                </div>
-                <div className="mt-4 flex justify-between text-sm text-gray-600">
-                  <span>📅 {project.timeEstimate || '3 months'}</span>
-                  <span>👨‍💻 {project.maxDevelopers || '5 developers'}</span>
-                </div>
-                <Link
-                  to={`/project/${project.id}`}
-                  className="mt-4 block bg-blue-500 text-white text-center py-2 rounded-md font-medium hover:bg-blue-600"
-                >
-                  View Details →
-                </Link>
-              </div>
-            </div>
-          ))}
-        </div>
-      </div>
       {/* Testimonials Section */}
       <div className="max-w-7xl mx-auto py-16 px-4 sm:px-6 lg:px-8 bg-gray-50">
         <h2 className="text-3xl font-bold text-gray-900 text-center mb-6">Success Stories</h2>
@@ -310,6 +354,72 @@ const Home = () => {
               </div>
             </div>
           ))}
+        </div>
+      </div>
+
+      {/* Organization Testimonials Section */}
+      <div className="max-w-7xl mx-auto py-24 px-4 sm:px-6 lg:px-8">
+        <h2 className="text-3xl font-bold text-gray-900 mb-2 text-center">Trusted by Organizations</h2>
+        <p className="text-gray-600 text-center mb-16">
+          See how non-profits and organizations are achieving their goals through our platform
+        </p>
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-12">
+          <div className="bg-white rounded-xl shadow-lg p-8 relative">
+            <div className="absolute -top-6 left-8">
+              <div className="w-12 h-12 bg-blue-600 rounded-full flex items-center justify-center">
+                <svg className="w-6 h-6 text-white" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 21V5a2 2 0 00-2-2H7a2 2 0 00-2 2v16m14 0h2m-2 0h-5m-9 0H3m2 0h5M9 7h1m-1 4h1m4-4h1m-1 4h1m-5 10v-5a1 1 0 011-1h2a1 1 0 011 1v5m-4 0h4" />
+                </svg>
+              </div>
+            </div>
+            <blockquote className="mt-8">
+              <p className="text-lg text-gray-600 italic">
+                "The developers we connected with through this platform helped us modernize our entire digital infrastructure. The impact has been tremendous."
+              </p>
+            </blockquote>
+            <div className="mt-4">
+              <p className="text-gray-900 font-semibold">Environmental Action Network</p>
+              <p className="text-sm text-gray-500">Non-profit Organization</p>
+            </div>
+          </div>
+
+          <div className="bg-white rounded-xl shadow-lg p-8 relative">
+            <div className="absolute -top-6 left-8">
+              <div className="w-12 h-12 bg-blue-600 rounded-full flex items-center justify-center">
+                <svg className="w-6 h-6 text-white" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 6.253v13m0-13C10.832 5.477 9.246 5 7.5 5S4.168 5.477 3 6.253v13C4.168 18.477 5.754 18 7.5 18s3.332.477 4.5 1.253m0-13C13.168 5.477 14.754 5 16.5 5c1.747 0 3.332.477 4.5 1.253v13C19.832 18.477 18.247 18 16.5 18c-1.746 0-3.332.477-4.5 1.253" />
+                </svg>
+              </div>
+            </div>
+            <blockquote className="mt-8">
+              <p className="text-lg text-gray-600 italic">
+                "Finding skilled developers who are passionate about education was challenging until we discovered this platform. Now we're making learning accessible to everyone."
+              </p>
+            </blockquote>
+            <div className="mt-4">
+              <p className="text-gray-900 font-semibold">Global Education Initiative</p>
+              <p className="text-sm text-gray-500">Educational Non-profit</p>
+            </div>
+          </div>
+
+          <div className="bg-white rounded-xl shadow-lg p-8 relative">
+            <div className="absolute -top-6 left-8">
+              <div className="w-12 h-12 bg-blue-600 rounded-full flex items-center justify-center">
+                <svg className="w-6 h-6 text-white" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4.318 6.318a4.5 4.5 0 000 6.364L12 20.364l7.682-7.682a4.5 4.5 0 00-6.364-6.364L12 7.636l-1.318-1.318a4.5 4.5 0 00-6.364 0z" />
+                </svg>
+              </div>
+            </div>
+            <blockquote className="mt-8">
+              <p className="text-lg text-gray-600 italic">
+                "The dedication and skill of the developers we've worked with has enabled us to help more people in need. Technology truly can change lives."
+              </p>
+            </blockquote>
+            <div className="mt-4">
+              <p className="text-gray-900 font-semibold">Community Health Alliance</p>
+              <p className="text-sm text-gray-500">Healthcare Non-profit</p>
+            </div>
+          </div>
         </div>
       </div>
     </div>

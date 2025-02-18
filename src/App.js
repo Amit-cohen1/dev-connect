@@ -16,6 +16,7 @@ import ProjectDetail from './pages/ProjectDetail';
 import PrivateRoute from './components/PrivateRoute';
 import OrganizationRoute from './components/OrganizationRoute';
 import GeminiProjectAI from './pages/GeminiProjectAI';
+import UserProfile from './pages/UserProfile';
 
 function App() {
   return (
@@ -34,6 +35,7 @@ function App() {
               <Route path="/projects" element={<Projects />} />
               <Route path="/project/:projectId" element={<ProjectDetail />} />
               <Route path="/gemini-project-ai" element={<GeminiProjectAI />} />
+              <Route path="/user/:userId" element={<UserProfile />} />
 
               {/* Protected Routes */}
               <Route 

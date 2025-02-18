@@ -10,9 +10,31 @@ export const sendNotification = async ({
   projectTitle = null,
   senderName = null,
   status = null,
-  additionalData = {}
+  additionalData = {},
+  submissionId = null
 }) => {
   try {
+    // Determine the correct link based on notification type
+    let link = null;
+    if (projectId) {
+      switch (type) {
+        case 'project_submission':
+        case 'submission_review':
+          link = `/project/${projectId}?tab=submissions`;
+          break;
+        case 'new_comment':
+        case 'mention':
+          link = `/project/${projectId}#comments`;  // Using hash for comments section
+          break;
+        case 'application_status':
+        case 'new_application':
+          link = `/project/${projectId}?tab=applications`;
+          break;
+        default:
+          link = `/project/${projectId}`;
+      }
+    }
+
     await addDoc(collection(db, 'notifications'), {
       userId,
       type,
@@ -21,9 +43,10 @@ export const sendNotification = async ({
       projectTitle,
       senderName,
       status,
-      link: projectId ? `/project/${projectId}` : null, // Fixed URL pattern here
+      link,
       read: false,
       timestamp: serverTimestamp(),
+      submissionId,
       ...additionalData
     });
   } catch (error) {
@@ -37,7 +60,10 @@ export const notificationTypes = {
   APPLICATION_STATUS: 'application_status',
   PROJECT_UPDATE: 'project_update',
   NEW_APPLICATION: 'new_application',
-  GENERAL: 'general'
+  GENERAL: 'general',
+  PROJECT_SUBMISSION: 'project_submission',
+  SUBMISSION_REVIEW: 'submission_review',
+  SKILLS_UPDATED: 'skills_updated'
 };
 
 export const sendMessageNotification = async (userId, senderName, projectId, projectTitle) => {
@@ -81,5 +107,37 @@ export const sendNewApplicationNotification = async (userId, projectId, projectT
     projectId,
     projectTitle,
     applicantName
+  });
+};
+
+export const sendProjectSubmissionNotification = async (organizationId, projectId, submissionId, developerName) => {
+  await sendNotification({
+    userId: organizationId,
+    type: notificationTypes.PROJECT_SUBMISSION,
+    message: `${developerName} has submitted their work for review`,
+    projectId,
+    submissionId,
+    senderName: developerName
+  });
+};
+
+export const sendSubmissionReviewNotification = async (developerId, projectId, submissionId, status, reviewerName) => {
+  await sendNotification({
+    userId: developerId,
+    type: notificationTypes.SUBMISSION_REVIEW,
+    message: `Your project submission has been ${status}`,
+    projectId,
+    submissionId,
+    senderName: reviewerName
+  });
+};
+
+export const sendSkillsUpdateNotification = async (userId, projectTitle, newSkills) => {
+  await sendNotification({
+    userId,
+    type: notificationTypes.SKILLS_UPDATED,
+    message: `Your skills have been updated after completing "${projectTitle}". New skills added: ${newSkills.join(', ')}`,
+    projectId: null,
+    senderName: 'System'
   });
 };

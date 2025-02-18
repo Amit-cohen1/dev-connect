@@ -1,19 +1,22 @@
 // src/pages/ProjectDetail.js
 import { useState, useEffect, useContext } from 'react';
-import { useParams, useNavigate } from 'react-router-dom';
+import { useParams, useNavigate, useSearchParams } from 'react-router-dom';
 import { AuthContext } from '../context/AuthContext';
 import { db } from '../firebase/config';
 import { 
   doc, getDoc, collection, query, where, getDocs,
   updateDoc, arrayUnion, deleteDoc, serverTimestamp,
-  addDoc 
+  addDoc, orderBy
 } from 'firebase/firestore';
 import ProjectApplicationForm from '../components/ProjectApplications';
 import ProjectComments from '../components/ProjectComments';
 import { sendApplicationStatusNotification, sendNewApplicationNotification } from '../utils/notifications';
+import ProjectSubmission from '../components/ProjectSubmission';
+import ProjectReview from '../components/ProjectReview';
 
 const ProjectDetail = () => {
   const { projectId } = useParams();
+  const [searchParams] = useSearchParams();
   const { user } = useContext(AuthContext);
   const navigate = useNavigate();
   const [project, setProject] = useState(null);
@@ -24,6 +27,9 @@ const ProjectDetail = () => {
   const [editedProject, setEditedProject] = useState(null);
   const [showApplicationForm, setShowApplicationForm] = useState(false);
   const [hasApplied, setHasApplied] = useState(false);
+  const [isUserEnrolled, setIsUserEnrolled] = useState(false);
+  const [userApplicationStatus, setUserApplicationStatus] = useState(null);
+  const [submissions, setSubmissions] = useState([]);
 
   useEffect(() => {
     const fetchProjectData = async () => {
@@ -39,19 +45,8 @@ const ProjectDetail = () => {
         setProject(projectData);
         setEditedProject(projectData);
 
-        // Check if user has already applied
         if (user) {
-          const applicationQuery = query(
-            collection(db, 'projectApplications'),
-            where('projectId', '==', projectId),
-            where('userId', '==', user.uid)
-          );
-          const applicationSnapshot = await getDocs(applicationQuery);
-          setHasApplied(!applicationSnapshot.empty);
-        }
-
-        // Fetch applications if it's the organization's project
-        if (projectData.organizationId === user?.uid) {
+          // Fetch all applications for the project
           const applicationsQuery = query(
             collection(db, 'projectApplications'),
             where('projectId', '==', projectId)
@@ -70,6 +65,41 @@ const ProjectDetail = () => {
           );
 
           setApplications(applicationsData);
+          
+          // Check if user has already applied and if they're approved
+          const userApplication = applicationsData.find(app => app.userId === user.uid);
+          setHasApplied(!!userApplication);
+          setUserApplicationStatus(userApplication?.status || null);
+
+          // Check if user is enrolled in the project
+          if (projectData.assignedDevelopers) {
+            const isEnrolled = projectData.assignedDevelopers.some(
+              dev => dev.userId === user.uid
+            );
+            setIsUserEnrolled(isEnrolled);
+          }
+
+          // Fetch project submissions if user is enrolled, approved, or is organization
+          const isApprovedDeveloper = userApplication?.status === 'accepted';
+          if (isApprovedDeveloper || isUserEnrolled || projectData.organizationId === user.uid) {
+            const submissionsQuery = query(
+              collection(db, 'projectSubmissions'),
+              where('projectId', '==', projectId),
+              orderBy('timestamp', 'desc')
+            );
+            const submissionsSnap = await getDocs(submissionsQuery);
+            const submissionsData = submissionsSnap.docs.map(doc => ({
+              id: doc.id,
+              ...doc.data()
+            }));
+            setSubmissions(submissionsData);
+          }
+        }
+
+        // Set active tab based on URL parameter
+        const tabParam = searchParams.get('tab');
+        if (tabParam) {
+          setActiveTab(tabParam);
         }
 
         setLoading(false);
@@ -80,7 +110,19 @@ const ProjectDetail = () => {
     };
 
     fetchProjectData();
-  }, [projectId, user, navigate]);
+  }, [projectId, user, navigate, searchParams]);
+
+  useEffect(() => {
+    // Handle hash navigation for comments
+    if (window.location.hash === '#comments') {
+      setTimeout(() => {
+        const commentsSection = document.getElementById('comments-section');
+        if (commentsSection) {
+          commentsSection.scrollIntoView({ behavior: 'smooth' });
+        }
+      }, 500); // Small delay to ensure content is loaded
+    }
+  }, []);
 
   const handleUpdateProject = async () => {
     try {
@@ -141,6 +183,52 @@ const ProjectDetail = () => {
         console.error('Error deleting project:', error);
       }
     }
+  };
+
+  const renderProjectComments = () => {
+    if (!user) return null;
+
+    // Show comments if user is the project owner, enrolled, or has an accepted application
+    const isUserApproved = applications.some(app => 
+      app.userId === user.uid && app.status === 'accepted'
+    );
+    
+    if (isUserApproved || isUserEnrolled || project.organizationId === user.uid) {
+      return (
+        <div id="comments-section">
+          <ProjectComments 
+            projectId={projectId} 
+            organizationId={project.organizationId}
+          />
+        </div>
+      );
+    }
+    return null;
+  };
+
+  const formatSubmissionDate = (submission) => {
+    if (!submission.timestamp) return new Date().toLocaleString();
+    
+    // Handle Firestore timestamp
+    if (submission.timestamp.toDate && typeof submission.timestamp.toDate === 'function') {
+      return submission.timestamp.toDate().toLocaleString();
+    }
+    
+    // Handle our fallback timestamp
+    if (submission.displayTimestamp) {
+      return new Date(submission.displayTimestamp).toLocaleString();
+    }
+    
+    return new Date().toLocaleString();
+  };
+
+  // Update URL when changing tabs
+  const handleTabChange = (tab) => {
+    setActiveTab(tab);
+    // Update URL without causing a page reload
+    const newSearchParams = new URLSearchParams(searchParams);
+    newSearchParams.set('tab', tab);
+    navigate(`?${newSearchParams.toString()}`, { replace: true });
   };
 
   if (loading) {
@@ -235,7 +323,7 @@ const ProjectDetail = () => {
       <div className="bg-white shadow-sm mb-6">
         <nav className="-mb-px flex space-x-8 px-4" aria-label="Tabs">
           <button
-            onClick={() => setActiveTab('details')}
+            onClick={() => handleTabChange('details')}
             className={`${
               activeTab === 'details'
                 ? 'border-blue-500 text-blue-600'
@@ -244,9 +332,10 @@ const ProjectDetail = () => {
           >
             Project Details
           </button>
+          
           {project.organizationId === user?.uid && (
             <button
-              onClick={() => setActiveTab('applications')}
+              onClick={() => handleTabChange('applications')}
               className={`${
                 activeTab === 'applications'
                   ? 'border-blue-500 text-blue-600'
@@ -254,6 +343,19 @@ const ProjectDetail = () => {
               } whitespace-nowrap py-4 px-1 border-b-2 font-medium text-sm`}
             >
               Applications ({applications.length})
+            </button>
+          )}
+
+          {(isUserEnrolled || userApplicationStatus === 'accepted' || project.organizationId === user?.uid) && (
+            <button
+              onClick={() => handleTabChange('submissions')}
+              className={`${
+                activeTab === 'submissions'
+                  ? 'border-blue-500 text-blue-600'
+                  : 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300'
+              } whitespace-nowrap py-4 px-1 border-b-2 font-medium text-sm`}
+            >
+              Submissions {submissions.length > 0 && `(${submissions.length})`}
             </button>
           )}
         </nav>
@@ -328,35 +430,46 @@ const ProjectDetail = () => {
               applications.map((application) => (
                 <div key={application.id} className="p-6">
                   <div className="flex justify-between items-start">
-                    <div>
-                      <h3 className="text-lg font-medium text-gray-900">
-                        {application.userName}
-                      </h3>
-                      <p className="mt-1 text-sm text-gray-500">
-                        Applied: {new Date(application.dateApplied.toDate()).toLocaleDateString()}
-                      </p>
-                      <p className="mt-2 text-gray-700">{application.coverLetter}</p>
-                      <div className="mt-4 space-x-4">
-                        {application.portfolio && (
-                          <a
-                            href={application.portfolio}
-                            target="_blank"
-                            rel="noopener noreferrer"
-                            className="text-blue-600 hover:text-blue-500"
-                          >
-                            Portfolio ↗
-                          </a>
-                        )}
-                        {application.githubProfile && (
-                          <a
-                            href={application.githubProfile}
-                            target="_blank"
-                            rel="noopener noreferrer"
-                            className="text-blue-600 hover:text-blue-500"
-                          >
-                            GitHub ↗
-                          </a>
-                        )}
+                    <div className="flex items-start space-x-4">
+                      <img
+                        src={application.user?.photoURL || 'https://api.dicebear.com/7.x/avataaars/svg?seed=default'}
+                        alt={application.userName}
+                        className="h-12 w-12 rounded-full cursor-pointer hover:opacity-80"
+                        onClick={() => navigate(`/user/${application.userId}`)}
+                      />
+                      <div>
+                        <h3 
+                          className="text-lg font-medium text-gray-900 hover:text-blue-600 cursor-pointer"
+                          onClick={() => navigate(`/user/${application.userId}`)}
+                        >
+                          {application.userName}
+                        </h3>
+                        <p className="mt-1 text-sm text-gray-500">
+                          Applied: {new Date(application.dateApplied.toDate()).toLocaleDateString()}
+                        </p>
+                        <p className="mt-2 text-gray-700">{application.coverLetter}</p>
+                        <div className="mt-4 space-x-4">
+                          {application.portfolio && (
+                            <a
+                              href={application.portfolio}
+                              target="_blank"
+                              rel="noopener noreferrer"
+                              className="text-blue-600 hover:text-blue-500"
+                            >
+                              Portfolio ↗
+                            </a>
+                          )}
+                          {application.githubProfile && (
+                            <a
+                              href={application.githubProfile}
+                              target="_blank"
+                              rel="noopener noreferrer"
+                              className="text-blue-600 hover:text-blue-500"
+                            >
+                              GitHub ↗
+                            </a>
+                          )}
+                        </div>
                       </div>
                     </div>
                     <div className="flex items-center space-x-2">
@@ -376,7 +489,150 @@ const ProjectDetail = () => {
             )}
           </div>
         )}
+
+        {activeTab === 'submissions' && (
+          <div className="p-6 space-y-6">
+            {/* Allow both enrolled and approved developers to submit */}
+            {(isUserEnrolled || userApplicationStatus === 'accepted') && project.organizationId !== user?.uid && (
+              <ProjectSubmission
+                projectId={projectId}
+                organizationId={project.organizationId}
+                onSubmissionComplete={() => {
+                  // Update submissions state with a properly formatted timestamp
+                  const newSubmission = {
+                    projectId,
+                    developerId: user.uid,
+                    developerName: user.displayName,
+                    status: 'pending',
+                    timestamp: {
+                      toDate: () => new Date() // Create a timestamp-like object
+                    }
+                  };
+                  setSubmissions(prevSubmissions => [newSubmission, ...prevSubmissions]);
+                }}
+              />
+            )}
+
+            {/* List of Submissions */}
+            <div className="space-y-4">
+              {submissions.map((submission) => (
+                <div key={submission.id || Date.now()} className="border rounded-lg p-4">
+                  {project.organizationId === user?.uid ? (
+                    <div className="space-y-4">
+                      <div className="flex items-start space-x-4">
+                        <img
+                          src={submission.userAvatar || 'https://api.dicebear.com/7.x/avataaars/svg?seed=default'}
+                          alt={submission.developerName}
+                          className="h-12 w-12 rounded-full cursor-pointer hover:opacity-80"
+                          onClick={() => navigate(`/user/${submission.developerId}`)}
+                        />
+                        <div className="flex-grow">
+                          <h3 
+                            className="text-lg font-medium text-gray-900 hover:text-blue-600 cursor-pointer"
+                            onClick={() => navigate(`/user/${submission.developerId}`)}
+                          >
+                            {submission.developerName}
+                          </h3>
+                          <p className="text-sm text-gray-500">
+                            {formatSubmissionDate(submission)}
+                          </p>
+                        </div>
+                        <span className={`px-3 py-1 rounded-full text-sm font-medium ${
+                          submission.status === 'approved'
+                            ? 'bg-green-100 text-green-800'
+                            : submission.status === 'rejected'
+                            ? 'bg-red-100 text-red-800'
+                            : 'bg-yellow-100 text-yellow-800'
+                        }`}>
+                          {submission.status.charAt(0).toUpperCase() + submission.status.slice(1)}
+                        </span>
+                      </div>
+                      <ProjectReview
+                        projectId={projectId}
+                        submissionId={submission.id}
+                      />
+                    </div>
+                  ) : (
+                    <div className="space-y-3">
+                      <div className="flex justify-between items-start">
+                        <div>
+                          <h4 className="text-lg font-medium text-gray-900">
+                            Submission from {submission.developerName}
+                          </h4>
+                          <p className="text-sm text-gray-500">
+                            {formatSubmissionDate(submission)}
+                          </p>
+                        </div>
+                        <span className={`px-3 py-1 rounded-full text-sm font-medium ${
+                          submission.status === 'approved'
+                            ? 'bg-green-100 text-green-800'
+                            : submission.status === 'rejected'
+                            ? 'bg-red-100 text-red-800'
+                            : 'bg-yellow-100 text-yellow-800'
+                        }`}>
+                          {submission.status.charAt(0).toUpperCase() + submission.status.slice(1)}
+                        </span>
+                      </div>
+
+                      <p className="text-gray-700">{submission.submissionText}</p>
+
+                      <div className="flex flex-wrap gap-4">
+                        <a
+                          href={submission.githubLink}
+                          target="_blank"
+                          rel="noopener noreferrer"
+                          className="inline-flex items-center text-blue-600 hover:text-blue-500"
+                        >
+                          <svg className="h-5 w-5 mr-1" fill="currentColor" viewBox="0 0 24 24">
+                            <path d="M12 0C5.37 0 0 5.37 0 12c0 5.3 3.438 9.8 8.205 11.385.6.113.82-.258.82-.577 0-.285-.01-1.04-.015-2.04-3.338.724-4.042-1.61-4.042-1.61C4.422 18.07 3.633 17.7 3.633 17.7c-1.087-.744.084-.729.084-.729 1.205.084 1.838 1.236 1.838 1.236 1.07 1.835 2.809 1.305 3.495.998.108-.776.417-1.305.76-1.605-2.665-.3-5.466-1.332-5.466-5.93 0-1.31.465-2.38 1.235-3.22-.135-.303-.54-1.523.105-3.176 0 0 1.005-.322 3.3 1.23.96-.267 1.98-.399 3-.405 1.02.006 2.04.138 3 .405 2.28-1.552 3.285-1.23 3.285-1.23.645 1.653.24 2.873.12 3.176.765.84 1.23 1.91 1.23 3.22 0 4.61-2.805 5.625-5.475 5.92.42.36.81 1.096.81 2.22 0 1.606-.015 2.896-.015 3.286 0 .315.21.69.825.57C20.565 21.795 24 17.295 24 12c0-6.63-5.37-12-12-12" />
+                          </svg>
+                          View Code Repository
+                        </a>
+                        {submission.liveUrl && (
+                          <a
+                            href={submission.liveUrl}
+                            target="_blank"
+                            rel="noopener noreferrer"
+                            className="inline-flex items-center text-blue-600 hover:text-blue-500"
+                          >
+                            <svg className="h-5 w-5 mr-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M10 6H6a2 2 0 00-2 2v10a2 2 0 002 2h10a2 2 0 002-2v-4M14 4h6m0 0v6m0-6L10 14" />
+                            </svg>
+                            View Live Demo
+                          </a>
+                        )}
+                      </div>
+
+                      {submission.feedback && (
+                        <div className={`mt-4 p-4 rounded-md ${
+                          submission.status === 'approved'
+                            ? 'bg-green-50'
+                            : 'bg-red-50'
+                        }`}>
+                          <h5 className="font-medium text-gray-900">Feedback</h5>
+                          <p className="mt-1 text-gray-700">{submission.feedback}</p>
+                          <p className="mt-2 text-sm text-gray-500">
+                            {submission.feedbackTimestamp?.toDate().toLocaleString()} by {submission.reviewerName}
+                          </p>
+                        </div>
+                      )}
+                    </div>
+                  )}
+                </div>
+              ))}
+
+              {submissions.length === 0 && (
+                <p className="text-center text-gray-500 py-4">
+                  No submissions yet
+                </p>
+              )}
+            </div>
+          </div>
+        )}
       </div>
+
+      {/* Add Comments Section */}
+      {renderProjectComments()}
 
       {/* Application Form Modal */}
       {showApplicationForm && (
