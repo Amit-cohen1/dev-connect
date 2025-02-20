@@ -34,7 +34,6 @@ function App() {
               <Route path="/register" element={<Register />} />
               <Route path="/projects" element={<Projects />} />
               <Route path="/project/:projectId" element={<ProjectDetail />} />
-              <Route path="/gemini-project-ai" element={<GeminiProjectAI />} />
               <Route path="/user/:userId" element={<UserProfile />} />
 
               {/* Protected Routes */}
@@ -64,6 +63,14 @@ function App() {
                   </OrganizationRoute>
                 } 
               />
+              <Route 
+                path="/gemini-project-ai" 
+                element={
+                  <OrganizationRoute>
+                    <GeminiProjectAI />
+                  </OrganizationRoute>
+                } 
+              />
 
               {/* 404 Route - Keep it last */}
               <Route 
@@ -79,7 +86,7 @@ function App() {
           </main>
           {/* Footer */}
           <Footer />
-       </div>
+        </div>
       </AuthProvider>
     </Router>
   );

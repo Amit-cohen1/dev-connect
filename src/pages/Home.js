@@ -2,7 +2,7 @@
 import { useEffect, useState, useContext } from 'react';
 import { Link } from 'react-router-dom';
 import { db } from '../firebase/config';
-import { collection, query, orderBy, limit, getDocs, where, doc, getDoc } from 'firebase/firestore';
+import { collection, query, orderBy, limit, getDocs, where, doc, getDoc, updateDoc } from 'firebase/firestore';
 import { AuthContext } from '../context/AuthContext';
 import axios from 'axios';
 
@@ -15,16 +15,34 @@ const Home = () => {
     activeDevs: 0,
   });
 
-  const [technologies, setTechnologies] = useState([
-    { name: "React", percentage: 95 },
-    { name: "TypeScript", percentage: 88 },
-    { name: "Node.js", percentage: 85 },
-    { name: "Python", percentage: 82 },
-    { name: "AWS", percentage: 78 },
-    { name: "Docker", percentage: 75 },
-  ]);
-
+  const [technologies, setTechnologies] = useState([]);
   const [hoveredTech, setHoveredTech] = useState(null);
+
+  const calculateTechnologyStats = (projects) => {
+    // Create a map to store technology counts
+    const techCount = {};
+    let totalProjects = projects.length;
+  
+    // Count occurrences of each technology
+    projects.forEach(project => {
+      if (project.technologies && Array.isArray(project.technologies)) {
+        project.technologies.forEach(tech => {
+          techCount[tech] = (techCount[tech] || 0) + 1;
+        });
+      }
+    });
+  
+    // Convert to array of objects with percentages
+    const techArray = Object.entries(techCount)
+      .map(([name, count]) => ({
+        name,
+        percentage: Math.round((count / totalProjects) * 100)
+      }))
+      .sort((a, b) => b.percentage - a.percentage)
+      .slice(0, 6); // Get top 6 technologies
+  
+    return techArray;
+  };
 
   const fetchFeaturedProjects = async () => {
     try {
@@ -39,22 +57,36 @@ const Home = () => {
       const projects = [];
 
       for (const docSnap of projectsSnapshot.docs) {
+        const projectRef = doc(db, 'projects', docSnap.id);
         const project = { id: docSnap.id, ...docSnap.data() };
 
-        // Fetch a relevant image from Pexels API based on project title and description
-        const response = await axios.get('https://api.pexels.com/v1/search', {
-          headers: {
-            Authorization: 'X71OYZXaackKssLkOZ4P6INink0716ZxjdejGgLzrhwAWMuRHHRvlPif'
-          },
-          params: {
-            query: `${project.title} ${project.description}`,
-            per_page: 1,
-            page: Math.floor(Math.random() * 100) + 1
-          }
-        });
+        // Only fetch image if project doesn't already have a stored imageUrl
+        if (!project.imageUrl) {
+          try {
+            const response = await axios.get('https://api.pexels.com/v1/search', {
+              headers: {
+                Authorization: 'X71OYZXaackKssLkOZ4P6INink0716ZxjdejGgLzrhwAWMuRHHRvlPif'
+              },
+              params: {
+                query: `${project.title} ${project.description}`,
+                per_page: 1,
+                page: Math.floor(Math.random() * 100) + 1
+              }
+            });
 
-        const imageUrl = response.data.photos[0]?.src?.medium || '/placeholder.jpg';
-        project.logoUrl = imageUrl;
+            const imageUrl = response.data.photos[0]?.src?.medium || '/placeholder.jpg';
+            
+            // Store the imageUrl in the project document
+            await updateDoc(projectRef, {
+              imageUrl: imageUrl
+            });
+            
+            project.imageUrl = imageUrl;
+          } catch (error) {
+            console.error('Error fetching image:', error);
+            project.imageUrl = '/placeholder.jpg';
+          }
+        }
 
         projects.push(project);
       }
@@ -67,6 +99,7 @@ const Home = () => {
 
   const fetchStats = async () => {
     try {
+      // Get all projects from the database
       const projectsSnapshot = await getDocs(collection(db, 'projects'));
       const projects = projectsSnapshot.docs.map(doc => doc.data());
 
@@ -76,6 +109,13 @@ const Home = () => {
       const usersSnapshot = await getDocs(collection(db, 'users'));
       const activeDevs = usersSnapshot.docs.filter(doc => doc.data().type === 'developer').length;
 
+      // Calculate comprehensive technology stats from all projects
+      const techStats = calculateTechnologyStats(projects);
+      
+      // Sort by usage percentage and get top technologies
+      const sortedTechStats = techStats.sort((a, b) => b.percentage - a.percentage);
+      setTechnologies(sortedTechStats);
+
       setStats({
         totalProjects,
         completedProjects,
@@ -83,6 +123,13 @@ const Home = () => {
       });
     } catch (error) {
       console.error('Error fetching stats:', error);
+      // Set default empty values in case of error
+      setTechnologies([]);
+      setStats({
+        totalProjects: 0,
+        completedProjects: 0,
+        activeDevs: 0,
+      });
     }
   };
 
@@ -199,7 +246,7 @@ const Home = () => {
             >
               <div className="relative">
                 <img
-                  src={project.logoUrl || '/placeholder.jpg'}
+                  src={project.imageUrl || project.logoUrl || '/placeholder.jpg'}
                   alt={`${project.organizationName || 'Organization'} Logo`}
                   className="h-48 w-full object-cover"
                 />

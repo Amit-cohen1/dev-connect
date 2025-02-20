@@ -1,16 +1,28 @@
 // Load polyfills first
 import './test-utils/polyfills';
 
-// Then load other test setup
+// jest-dom adds custom jest matchers for asserting on DOM nodes.
 import '@testing-library/jest-dom';
 import { server } from './mocks/server';
 
-// Establish API mocking before all tests.
-beforeAll(() => server.listen());
+// Configure global test environment
+beforeAll(() => {
+  // Start MSW Server
+  server.listen({ onUnhandledRequest: 'warn' });
+});
 
-// Reset any request handlers that we may add during the tests,
-// so they don't affect other tests.
-afterEach(() => server.resetHandlers());
+afterEach(() => {
+  // Reset MSW handlers between tests
+  server.resetHandlers();
+  
+  // Clear all mocks
+  jest.clearAllMocks();
+  
+  // Clean up any pending timers
+  jest.useRealTimers();
+});
 
-// Clean up after the tests are finished.
-afterAll(() => server.close());
+afterAll(() => {
+  // Clean up MSW server
+  server.close();
+});

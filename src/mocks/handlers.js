@@ -1,4 +1,5 @@
 import { http, HttpResponse } from 'msw';
+import { rest } from 'msw';
 
 const mockComments = [
   {
@@ -46,5 +47,25 @@ export const handlers = [
   http.post('*/projectComments', async ({ request }) => {
     const newComment = await request.json();
     return HttpResponse.json({ id: Date.now().toString(), ...newComment });
+  }),
+
+  // Updated handlers with v1 syntax
+  rest.get('*/api/user/:userId', (req, res, ctx) => {
+    const mockUsers = [
+      { id: 'test-user-1', name: 'Test User 1' },
+      { id: 'test-user-2', name: 'Test User 2' }
+    ];
+    const user = mockUsers.find(u => u.id === req.params.userId);
+    return res(ctx.json(user || null));
+  }),
+
+  rest.post('*/api/comments', async (req, res, ctx) => {
+    const newComment = await req.json();
+    return res(
+      ctx.json({ 
+        id: Date.now().toString(), 
+        ...newComment 
+      })
+    );
   })
 ];

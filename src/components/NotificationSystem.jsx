@@ -94,7 +94,7 @@ const NotificationItem = ({ notification, onMarkAsRead, onDelete }) => {
           }}
           className="text-red-600 hover:text-red-800 p-1 rounded"
           title="Delete"
-        >
+          >
           <svg className="h-4 w-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
             <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
           </svg>
@@ -187,12 +187,44 @@ const NotificationSystem = () => {
     }
   };
 
+  useEffect(() => {
+    const handleClickOutside = (e) => {
+      // Don't close if clicking the notification button or inside the panel
+      if (e.target.closest('.notification-button')) {
+        return;
+      }
+      
+      // Close if clicking outside the notification panel
+      if (!e.target.closest('.notification-container')) {
+        setIsOpen(false);
+      }
+    };
+
+    const handleEscapeKey = (e) => {
+      if (e.key === 'Escape') {
+        setIsOpen(false);
+      }
+    };
+
+    if (isOpen) {
+      document.addEventListener('mousedown', handleClickOutside);
+      document.addEventListener('touchstart', handleClickOutside);
+      document.addEventListener('keydown', handleEscapeKey);
+    }
+
+    return () => {
+      document.removeEventListener('mousedown', handleClickOutside);
+      document.removeEventListener('touchstart', handleClickOutside);
+      document.removeEventListener('keydown', handleEscapeKey);
+    };
+  }, [isOpen]);
+
   return (
-    <div className="relative">
+    <div className="relative notification-container z-50">
       {/* Notification Bell */}
       <button
         onClick={() => setIsOpen(!isOpen)}
-        className="relative p-2 text-gray-600 hover:text-gray-900 focus:outline-none"
+        className="relative p-2 text-gray-600 hover:text-gray-900 focus:outline-none notification-button"
       >
         <svg
           className="h-6 w-6"
@@ -212,50 +244,93 @@ const NotificationSystem = () => {
         )}
       </button>
 
-      {/* Notifications Dropdown */}
+      {/* Notifications Panel */}
       {isOpen && (
-        <div className="absolute right-0 mt-2 w-80 bg-white rounded-lg shadow-lg ring-1 ring-black ring-opacity-5 z-50">
-          <div className="p-4 border-b border-gray-200">
-            <div className="flex items-center justify-between">
-              <h3 className="text-lg font-medium text-gray-900">Notifications</h3>
-              <div className="flex space-x-2">
-                {unreadCount > 0 && (
+        <>
+          {/* Mobile overlay */}
+          <div 
+            className="fixed inset-0 bg-black bg-opacity-50 z-[100] md:hidden" 
+            onClick={() => setIsOpen(false)}
+          />
+          
+          <div className={`
+            fixed md:absolute 
+            inset-y-0 right-0 md:inset-auto
+            top-0 md:top-10 
+            md:-right-2
+            h-[100dvh] md:h-auto
+            w-[85vw] md:w-96
+            bg-white 
+            shadow-lg 
+            z-[101] 
+            overflow-y-auto 
+            md:rounded-lg
+            transform-gpu
+            transition-all
+            duration-300
+            ease-out
+            safe-area-inset-bottom
+            pb-[env(safe-area-inset-bottom)]
+            ${isOpen ? 'translate-x-0 opacity-100' : 'translate-x-full opacity-0 md:opacity-100 md:translate-x-0'}
+            md:max-h-[calc(100vh-80px)]
+          `}>
+            {/* Mobile drag indicator */}
+            <div className="md:hidden w-12 h-1 bg-gray-300 rounded-full mx-auto my-3"></div>
+            {/* Mobile header */}
+            <div className="sticky top-0 bg-white border-b border-gray-200 z-10">
+              <div className="flex items-center justify-between p-4">
+                <div className="flex items-center space-x-3">
                   <button
-                    onClick={handleMarkAllAsRead}
-                    className="text-sm text-blue-600 hover:text-blue-500"
+                    onClick={() => setIsOpen(false)}
+                    className="md:hidden p-2 -ml-2 text-gray-500 hover:text-gray-700"
                   >
-                    Mark all as read
+                    <svg className="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 19l-7-7 7-7" />
+                    </svg>
                   </button>
-                )}
-                {notifications.length > 0 && (
-                  <button
-                    onClick={handleClearAll}
-                    className="text-sm text-red-600 hover:text-red-500"
-                  >
-                    Clear all
-                  </button>
-                )}
+                  <h3 className="text-lg font-medium text-gray-900">Notifications</h3>
+                </div>
+                <div className="flex items-center space-x-2">
+                  {unreadCount > 0 && (
+                    <button
+                      onClick={handleMarkAllAsRead}
+                      className="text-sm text-blue-600 hover:text-blue-500"
+                    >
+                      Mark all read
+                    </button>
+                  )}
+                  {notifications.length > 0 && (
+                    <button
+                      onClick={handleClearAll}
+                      className="text-sm text-red-600 hover:text-red-500"
+                    >
+                      Clear all
+                    </button>
+                  )}
+                </div>
               </div>
             </div>
-          </div>
 
-          <div className="max-h-96 overflow-y-auto divide-y divide-gray-200">
-            {notifications.length === 0 ? (
-              <div className="p-4 text-center text-gray-500">
-                No notifications yet
-              </div>
-            ) : (
-              notifications.map(notification => (
-                <NotificationItem
-                  key={notification.id}
-                  notification={notification}
-                  onMarkAsRead={handleMarkAsRead}
-                  onDelete={handleDelete}
-                />
-              ))
-            )}
+            <div className="divide-y divide-gray-200">
+              {notifications.length === 0 ? (
+                <div className="p-4 text-center text-gray-500">
+                  No notifications yet
+                </div>
+              ) : (
+                notifications.map(notification => (
+                  <NotificationItem
+                    key={notification.id}
+                    notification={notification}
+                    onMarkAsRead={handleMarkAsRead}
+                    onDelete={handleDelete}
+                  />
+                ))
+              )}
+            </div>
+            {/* Mobile bottom safe area spacer */}
+            <div className="h-[env(safe-area-inset-bottom)] md:hidden"></div>
           </div>
-        </div>
+        </>
       )}
     </div>
   );

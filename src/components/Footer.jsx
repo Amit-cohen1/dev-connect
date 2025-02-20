@@ -6,6 +6,15 @@ const Footer = () => {
   return (
     <footer className="bg-gray-800 text-white py-8">
       <div className="container mx-auto px-4">
+        {/* Logo Section */}
+        <div className="flex justify-center mb-8">
+          <img
+            src="/Logo/logo-transparent.png"
+            alt="DevTogether Logo"
+            className="h-64 w-auto" // Increased from h-56 to h-64
+          />
+        </div>
+
         {/* Top Section */}
         <div className="flex flex-wrap justify-between items-start">
           {/* Quick Links */}

@@ -13,6 +13,7 @@ import ProjectComments from '../components/ProjectComments';
 import { sendApplicationStatusNotification, sendNewApplicationNotification } from '../utils/notifications';
 import ProjectSubmission from '../components/ProjectSubmission';
 import ProjectReview from '../components/ProjectReview';
+import axios from 'axios';
 
 const ProjectDetail = () => {
   const { projectId } = useParams();
@@ -33,78 +34,82 @@ const ProjectDetail = () => {
 
   useEffect(() => {
     const fetchProjectData = async () => {
+      if (!projectId) return;
+
       try {
-        // Fetch project details
-        const projectDoc = await getDoc(doc(db, 'projects', projectId));
-        if (!projectDoc.exists()) {
-          navigate('/projects');
-          return;
-        }
+        const projectRef = doc(db, 'projects', projectId);
+        const projectSnap = await getDoc(projectRef);
 
-        const projectData = { id: projectDoc.id, ...projectDoc.data() };
-        setProject(projectData);
-        setEditedProject(projectData);
+        if (projectSnap.exists()) {
+          const projectData = { id: projectSnap.id, ...projectSnap.data() };
 
-        if (user) {
-          // Fetch all applications for the project
-          const applicationsQuery = query(
-            collection(db, 'projectApplications'),
-            where('projectId', '==', projectId)
-          );
-          const applicationsSnapshot = await getDocs(applicationsQuery);
-          
-          const applicationsData = await Promise.all(
-            applicationsSnapshot.docs.map(async (appDoc) => {
-              const userData = await getDoc(doc(db, 'users', appDoc.data().userId));
-              return {
-                id: appDoc.id,
-                ...appDoc.data(),
-                user: userData.data()
-              };
-            })
-          );
+          // Only fetch image if project doesn't already have a stored imageUrl
+          if (!projectData.imageUrl) {
+            try {
+              const response = await axios.get('https://api.pexels.com/v1/search', {
+                headers: {
+                  Authorization: 'X71OYZXaackKssLkOZ4P6INink0716ZxjdejGgLzrhwAWMuRHHRvlPif'
+                },
+                params: {
+                  query: `${projectData.title} ${projectData.description}`,
+                  per_page: 1,
+                  page: Math.floor(Math.random() * 100) + 1
+                }
+              });
 
-          setApplications(applicationsData);
-          
-          // Check if user has already applied and if they're approved
-          const userApplication = applicationsData.find(app => app.userId === user.uid);
-          setHasApplied(!!userApplication);
-          setUserApplicationStatus(userApplication?.status || null);
-
-          // Check if user is enrolled in the project
-          if (projectData.assignedDevelopers) {
-            const isEnrolled = projectData.assignedDevelopers.some(
-              dev => dev.userId === user.uid
-            );
-            setIsUserEnrolled(isEnrolled);
+              const imageUrl = response.data.photos[0]?.src?.large || '/placeholder.jpg';
+              
+              // Store the imageUrl in the project document
+              await updateDoc(projectRef, {
+                imageUrl: imageUrl
+              });
+              
+              projectData.imageUrl = imageUrl;
+            } catch (error) {
+              console.error('Error fetching image:', error);
+              projectData.imageUrl = '/placeholder.jpg';
+            }
           }
 
-          // Fetch project submissions if user is enrolled, approved, or is organization
-          const isApprovedDeveloper = userApplication?.status === 'accepted';
-          if (isApprovedDeveloper || isUserEnrolled || projectData.organizationId === user.uid) {
-            const submissionsQuery = query(
-              collection(db, 'projectSubmissions'),
-              where('projectId', '==', projectId),
-              orderBy('timestamp', 'desc')
-            );
-            const submissionsSnap = await getDocs(submissionsQuery);
-            const submissionsData = submissionsSnap.docs.map(doc => ({
+          setProject(projectData);
+          setEditedProject(projectData);
+
+          // Fetch applications if user is the project owner
+          if (user?.uid === projectData.organizationId) {
+            const applicationsRef = collection(db, 'applications');
+            const q = query(applicationsRef, where('projectId', '==', projectId));
+            const applicationsSnap = await getDocs(q);
+            setApplications(applicationsSnap.docs.map(doc => ({
               id: doc.id,
               ...doc.data()
-            }));
-            setSubmissions(submissionsData);
+            })));
           }
-        }
 
-        // Set active tab based on URL parameter
-        const tabParam = searchParams.get('tab');
-        if (tabParam) {
-          setActiveTab(tabParam);
-        }
+          // Check if user has applied
+          if (user) {
+            const applicationsRef = collection(db, 'applications');
+            const q = query(
+              applicationsRef,
+              where('projectId', '==', projectId),
+              where('userId', '==', user.uid)
+            );
+            const userApplicationSnap = await getDocs(q);
+            if (!userApplicationSnap.empty) {
+              setHasApplied(true);
+              setUserApplicationStatus(userApplicationSnap.docs[0].data().status);
+            }
+          }
 
-        setLoading(false);
+          // Check if user is enrolled
+          if (user && projectData.assignedDevelopers) {
+            setIsUserEnrolled(projectData.assignedDevelopers.includes(user.uid));
+          }
+        } else {
+          navigate('/projects');
+        }
       } catch (error) {
-        console.error('Error fetching project data:', error);
+        console.error('Error fetching project:', error);
+      } finally {
         setLoading(false);
       }
     };
@@ -240,7 +245,64 @@ const ProjectDetail = () => {
   }
 
   return (
-    <div className="max-w-7xl mx-auto py-6 px-4 sm:px-6 lg:px-8">
+    <div className="min-h-screen bg-gray-50">
+      {loading ? (
+        <div className="flex justify-center items-center min-h-screen">
+          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-500"></div>
+        </div>
+      ) : project ? (
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
+          <div className="bg-white rounded-xl shadow-lg overflow-hidden">
+            {/* Hero Image Section */}
+            <div className="relative h-96">
+              <img
+                src={project.imageUrl || '/placeholder.jpg'}
+                alt={project.title}
+                className="w-full h-full object-cover"
+                loading="lazy"
+              />
+              <div className="absolute inset-0 bg-gradient-to-t from-black/70 via-black/50 to-transparent"></div>
+              <div className="absolute bottom-0 left-0 right-0 p-8">
+                <div className="flex justify-between items-end">
+                  <div>
+                    <h1 className="text-4xl font-bold text-white mb-4">{project.title}</h1>
+                    <div className="flex items-center space-x-4">
+                      <span className="bg-blue-500/80 text-white px-4 py-1 rounded-full text-sm font-medium">
+                        {project.status}
+                      </span>
+                      <span className="text-white/90">
+                        Posted by {project.organizationName}
+                      </span>
+                    </div>
+                  </div>
+                  {user?.uid === project.organizationId && (
+                    <div className="flex space-x-3">
+                      <button
+                        onClick={() => setIsEditing(true)}
+                        className="bg-white/90 hover:bg-white text-gray-800 px-4 py-2 rounded-lg transition-colors duration-200 flex items-center"
+                      >
+                        <svg className="w-5 h-5 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z" />
+                        </svg>
+                        Edit Project
+                      </button>
+                      <button
+                        onClick={handleDeleteProject}
+                        className="bg-red-500/90 hover:bg-red-500 text-white px-4 py-2 rounded-lg transition-colors duration-200 flex items-center"
+                      >
+                        <svg className="w-5 h-5 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
+                        </svg>
+                        Delete Project
+                      </button>
+                    </div>
+                  )}
+                </div>
+              </div>
+            </div>
+
+            {/* Rest of the project details */}
+            <div className="max-w-7xl mx-auto py-6 px-4 sm:px-6 lg:px-8">
       {/* Project Header */}
       <div className="bg-white shadow rounded-lg mb-6">
         <div className="px-4 py-5 sm:px-6 flex justify-between items-start">
@@ -644,6 +706,14 @@ const ProjectDetail = () => {
             setHasApplied(true);
           }}
         />
+      )}
+    </div>
+          </div>
+        </div>
+      ) : (
+        <div className="flex justify-center items-center min-h-screen">
+          <p className="text-gray-600">Project not found</p>
+        </div>
       )}
     </div>
   );
