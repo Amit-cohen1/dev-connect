@@ -1,6 +1,7 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { useNavigate } from 'react-router-dom';
 import axios from 'axios';
+import ProjectMascot from '../components/ProjectMascot';
 
 // Create a dedicated axios instance for Gemini API
 const geminiApi = axios.create({
@@ -28,12 +29,29 @@ const GeminiProjectAI = () => {
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
   const [finalResponse, setFinalResponse] = useState(null);
+  const [mascotState, setMascotState] = useState({
+    message: '',
+    isVisible: false,
+    position: 'left'
+  });
 
   const messagesEndRef = useRef(null);
   const [animateInput, setAnimateInput] = useState(false);
 
   const scrollToBottom = () => {
-    messagesEndRef.current?.scrollIntoView({ behavior: "smooth" });
+    // Only scroll if user is already near the bottom
+    const scrollEl = messagesEndRef.current?.parentElement;
+    if (scrollEl) {
+      const { scrollHeight, scrollTop, clientHeight } = scrollEl;
+      const isNearBottom = scrollHeight - scrollTop - clientHeight < 100;
+      
+      if (isNearBottom) {
+        scrollEl.scrollTo({
+          top: scrollHeight,
+          behavior: 'smooth'
+        });
+      }
+    }
   };
 
   useEffect(() => {
@@ -88,6 +106,18 @@ const GeminiProjectAI = () => {
   });
   const GEMINI_API_URL = `https://generativelanguage.googleapis.com/v1beta/models/gemini-pro:generateContent?key=${API_KEY}`;
 
+  const showMascot = (message, position = 'left') => {
+    setMascotState({
+      message,
+      isVisible: true,
+      position
+    });
+    // Hide mascot after 8 seconds
+    setTimeout(() => {
+      setMascotState(prev => ({...prev, isVisible: false}));
+    }, 8000);
+  };
+
   useEffect(() => {
     if (!API_KEY) {
       setError('Gemini API key is not configured. Please add REACT_APP_GEMINI_API_KEY to your environment variables.');
@@ -104,6 +134,9 @@ const GeminiProjectAI = () => {
     }
     
     initializeConversation();
+    
+    // Show welcome message
+    showMascot("👋 Hi! I'm DevBot, your project planning assistant. Tell me about your project idea!", 'right');
     
     // Cleanup on unmount
     return () => {
@@ -183,6 +216,9 @@ const GeminiProjectAI = () => {
       setLoading(true);
       setError('');
       
+      // Show thinking message
+      showMascot("I'm thinking about how to help with your project...", 'left');
+      
       const updatedConversation = [...conversation, { role: 'user', text: userInput }];
       setConversation(updatedConversation);
       setUserInput('');
@@ -204,6 +240,11 @@ const GeminiProjectAI = () => {
 
       const aiResponse = response.data.candidates[0].content.parts[0].text;
       setConversation(prev => [...prev, { role: 'ai', text: aiResponse }]);
+
+      // Show encouragement after response
+      if (updatedConversation.length <= 4) {
+        showMascot("That's great! Keep going - we're making good progress!", 'right');
+      }
     } catch (error) {
       console.error('Message error:', error);
       
@@ -245,6 +286,8 @@ const GeminiProjectAI = () => {
     try {
       setLoading(true);
       setError('');
+      
+      showMascot("I'll help you create a summary of your project...", 'left');
 
       const requestBody = {
         contents: [{
@@ -309,6 +352,7 @@ const GeminiProjectAI = () => {
         };
         
         setFinalResponse(validatedResponse);
+        showMascot("Great! I've created a summary of your project. Review it and click 'Create Project' when you're ready!", 'right');
       } catch (jsonError) {
         console.error('JSON parsing error:', jsonError);
         console.log('Failed to parse text:', cleanJsonText);
@@ -324,24 +368,26 @@ const GeminiProjectAI = () => {
 
   const handleCreateProject = () => {
     if (finalResponse) {
-      console.log('Data being sent to UploadProject:', finalResponse); // Debug log
-      navigate('/upload-project', { 
-        state: { 
-          formData: {
-            title: finalResponse.title,
-            description: finalResponse.description,
-            requirements: finalResponse.requirements,
-            technologies: finalResponse.technologies,
-            difficulty: finalResponse.difficulty,
-            timeEstimate: finalResponse.timeEstimate,
-            maxDevelopers: finalResponse.maxDevelopers,
-            githubRequired: finalResponse.githubRequired,
-            enrollmentType: finalResponse.enrollmentType
+      showMascot("Perfect! Let's create your project now!", 'right');
+      setTimeout(() => {
+        navigate('/upload-project', { 
+          state: { 
+            formData: {
+              title: finalResponse.title,
+              description: finalResponse.description,
+              requirements: finalResponse.requirements,
+              technologies: finalResponse.technologies,
+              difficulty: finalResponse.difficulty,
+              timeEstimate: finalResponse.timeEstimate,
+              maxDevelopers: finalResponse.maxDevelopers,
+              githubRequired: finalResponse.githubRequired,
+              enrollmentType: finalResponse.enrollmentType
+            },
+            autoSubmit: true
           },
-          autoSubmit: true
-        },
-        replace: true
-      });
+          replace: true
+        });
+      }, 1500);
     }
   };
   const handleKeyPress = (e) => {
@@ -485,6 +531,13 @@ const GeminiProjectAI = () => {
           )}
         </div>
       </div>
+
+      {/* Mascot Component */}
+      <ProjectMascot 
+        message={mascotState.message}
+        isVisible={mascotState.isVisible}
+        position={mascotState.position}
+      />
     </div>
   );
 };

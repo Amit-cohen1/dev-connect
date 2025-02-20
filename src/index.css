@@ -256,5 +256,59 @@
 
 .scroll-smooth::-webkit-scrollbar-thumb:hover {
   background-color: rgba(156, 163, 175, 0.8);
+}
 
+/* Mascot Animation Classes */
+@keyframes mascotBounce {
+  0%, 100% { transform: translateY(0); }
+  50% { transform: translateY(-10px); }
+}
+
+@keyframes mascotFadeIn {
+  from {
+    opacity: 0;
+    transform: translate3d(0, 20px, 0);
+  }
+  to {
+    opacity: 1;
+    transform: translate3d(0, 0, 0);
+  }
+}
+
+@keyframes mascotPulse {
+  0% { transform: scale(1); }
+  50% { transform: scale(1.05); }
+  100% { transform: scale(1); }
+}
+
+.mascot-bounce {
+  animation: mascotBounce 2s ease-in-out infinite;
+}
+
+.mascot-fade-in {
+  animation: mascotFadeIn 0.3s ease-out forwards;
+}
+
+.mascot-pulse {
+  animation: mascotPulse 2s ease-in-out infinite;
+}
+
+.mascot-message {
+  opacity: 0;
+  animation: mascotFadeIn 0.3s ease-out 0.15s forwards;
+}
+
+/* Mascot Hover Effect */
+@keyframes mascotHover {
+  0% { transform: scale(1) translateY(0); }
+  100% { transform: scale(1.02) translateY(-2px); }
+}
+
+.mascot-hover {
+  transition: all 0.3s ease;
+}
+
+.mascot-hover:hover {
+  animation: mascotHover 0.3s ease forwards;
+  filter: drop-shadow(0 4px 8px rgba(0, 0, 0, 0.1));
 }

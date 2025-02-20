@@ -304,30 +304,6 @@ const Home = () => {
         </div>
       </div>
 
-      {/* Stats Section */}
-      <div className="max-w-7xl mx-auto py-12 px-4 sm:px-6 lg:px-8">
-        <div className="grid grid-cols-1 gap-8 sm:grid-cols-3">
-          <div className="bg-white rounded-lg shadow px-5 py-6 sm:px-6">
-            <div className="text-center">
-              <div className="text-3xl font-bold text-blue-600">{stats.totalProjects}</div>
-              <div className="mt-2 text-sm font-medium text-gray-500">Total Projects</div>
-            </div>
-          </div>
-          <div className="bg-white rounded-lg shadow px-5 py-6 sm:px-6">
-            <div className="text-center">
-              <div className="text-3xl font-bold text-blue-600">{stats.completedProjects}</div>
-              <div className="mt-2 text-sm font-medium text-gray-500">Completed Projects</div>
-            </div>
-          </div>
-          <div className="bg-white rounded-lg shadow px-5 py-6 sm:px-6">
-            <div className="text-center">
-              <div className="text-3xl font-bold text-blue-600">{stats.activeDevs}</div>
-              <div className="mt-2 text-sm font-medium text-gray-500">Active Developers</div>
-            </div>
-          </div>
-        </div>
-      </div>
-
       {/* Testimonials Section */}
       <div className="max-w-7xl mx-auto py-16 px-4 sm:px-6 lg:px-8 bg-gray-50">
         <h2 className="text-3xl font-bold text-gray-900 text-center mb-6">Success Stories</h2>
