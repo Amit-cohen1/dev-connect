@@ -46,15 +46,38 @@ const Navbar = () => {
   return (
     <nav className="bg-white shadow-lg">
       <div className="max-w-7xl mx-auto px-4">
-        <div className="flex justify-between h-24 md:h-40">  {/* Added responsive height */}
-          <div className="flex items-center">
-            <Link to="/" className="flex-shrink-0 flex items-center">
+        <div className="flex justify-between h-24 md:h-40">
+          <div className="flex items-center space-x-4">
+            <Link to="/" className="flex-shrink-0">
               <img
                 src="/Logo/logo-transparent.png"
                 alt="DevTogether Logo"
-                className="h-24 md:h-44 w-auto" // Added responsive height
+                className="h-24 md:h-44 w-auto"
               />
             </Link>
+            {/* Navigation links moved here */}
+            <div className="hidden md:flex md:items-center md:space-x-4">
+              <Link
+                to="/"
+                className="text-gray-700 hover:text-blue-600 px-3 py-2 rounded-md text-sm font-medium"
+              >
+                Home
+              </Link>
+              <Link
+                to="/projects"
+                className="text-gray-700 hover:text-blue-600 px-3 py-2 rounded-md text-sm font-medium"
+              >
+                Projects
+              </Link>
+              {userData?.type === 'organization' && (
+                <Link
+                  to="/gemini-project-ai"
+                  className="text-gray-700 hover:text-blue-600 px-3 py-2 rounded-md text-sm font-medium"
+                >
+                  Project AI
+                </Link>
+              )}
+            </div>
           </div>
 
           {/* Mobile menu button and notifications */}
@@ -81,28 +104,8 @@ const Navbar = () => {
             </button>
           </div>
 
-          {/* Desktop menu */}
+          {/* Right side menu items */}
           <div className="hidden md:flex md:items-center md:space-x-4">
-            <Link
-              to="/"
-              className="text-gray-700 hover:text-blue-600 px-3 py-2 rounded-md text-sm font-medium"
-            >
-              Home
-            </Link>
-            <Link
-              to="/projects"
-              className="text-gray-700 hover:text-blue-600 px-3 py-2 rounded-md text-sm font-medium"
-            >
-              Projects
-            </Link>
-            {userData?.type === 'organization' && (
-              <Link
-                to="/gemini-project-ai"
-                className="text-gray-700 hover:text-blue-600 px-3 py-2 rounded-md text-sm font-medium"
-              >
-                Project AI
-              </Link>
-            )}
             {user ? (
               <>
                 <div className="flex items-center">

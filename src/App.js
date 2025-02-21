@@ -17,6 +17,7 @@ import PrivateRoute from './components/PrivateRoute';
 import OrganizationRoute from './components/OrganizationRoute';
 import GeminiProjectAI from './pages/GeminiProjectAI';
 import UserProfile from './pages/UserProfile';
+import AboutUs from './pages/AboutUs';
 
 function App() {
   return (
@@ -30,6 +31,7 @@ function App() {
             <Routes>
               {/* Public Routes */}
               <Route path="/" element={<Home />} />
+              <Route path="/about" element={<AboutUs />} />
               <Route path="/login" element={<Login />} />
               <Route path="/register" element={<Register />} />
               <Route path="/projects" element={<Projects />} />
