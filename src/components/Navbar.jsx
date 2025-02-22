@@ -69,6 +69,14 @@ const Navbar = () => {
               >
                 Projects
               </Link>
+              {userData?.type === 'developer' && (
+                <Link
+                  to="/developer-dashboard"
+                  className="text-gray-700 hover:text-blue-600 px-3 py-2 rounded-md text-sm font-medium"
+                >
+                  Dashboard
+                </Link>
+              )}
               {userData?.type === 'organization' && (
                 <Link
                   to="/gemini-project-ai"
@@ -193,6 +201,15 @@ const Navbar = () => {
             >
               Projects
             </Link>
+            {userData?.type === 'developer' && (
+              <Link
+                to="/developer-dashboard"
+                className="block text-lg text-gray-700 hover:text-blue-600 px-3 py-2 rounded-md font-medium hover:bg-gray-50"
+                onClick={() => setIsOpen(false)}
+              >
+                Dashboard
+              </Link>
+            )}
             {userData?.type === 'organization' && (
               <Link
                 to="/gemini-project-ai"

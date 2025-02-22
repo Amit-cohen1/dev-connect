@@ -18,6 +18,7 @@ import OrganizationRoute from './components/OrganizationRoute';
 import GeminiProjectAI from './pages/GeminiProjectAI';
 import UserProfile from './pages/UserProfile';
 import AboutUs from './pages/AboutUs';
+import DeveloperDashboard from './pages/DeveloperDashboard';
 
 function App() {
   return (
@@ -39,6 +40,14 @@ function App() {
               <Route path="/user/:userId" element={<UserProfile />} />
 
               {/* Protected Routes */}
+              <Route 
+                path="/developer-dashboard" 
+                element={
+                  <PrivateRoute>
+                    <DeveloperDashboard />
+                  </PrivateRoute>
+                } 
+              />
               <Route 
                 path="/profile" 
                 element={

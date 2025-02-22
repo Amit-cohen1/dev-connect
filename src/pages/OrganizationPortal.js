@@ -152,7 +152,7 @@ const OrganizationPortal = () => {
         }));
         setProjects(projectsData);
 
-        // Fetch applications
+        // Fetch applications from projectApplications collection
         const applicationsQuery = query(
           collection(db, 'projectApplications'),
           where('organizationId', '==', user.uid),

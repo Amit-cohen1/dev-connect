@@ -89,21 +89,31 @@ const Projects = () => {
       const fetchedProjects = [];
 
       for (const docSnap of projectsSnapshot.docs) {
-        const projectRef = doc(db, 'projects', docSnap.id);
-        const project = { id: docSnap.id, ...docSnap.data() };
+        const projectData = { id: docSnap.id, ...docSnap.data() };
+
+        // Get applications count from projectApplications collection
+        const applicationsRef = collection(db, 'projectApplications');
+        const applicationsQuery = query(
+          applicationsRef, 
+          where('projectId', '==', docSnap.id)
+        );
+        const applicationsSnapshot = await getDocs(applicationsQuery);
+        
+        // Update project data with applications count
+        projectData.applicantsCount = applicationsSnapshot.size;
 
         // Filter by search term if present
         if (filters.search) {
           const searchLower = filters.search.toLowerCase();
           if (
-            !project.title.toLowerCase().includes(searchLower) &&
-            !project.description.toLowerCase().includes(searchLower)
+            !projectData.title.toLowerCase().includes(searchLower) &&
+            !projectData.description.toLowerCase().includes(searchLower)
           ) {
             continue;
           }
         }
 
-        fetchedProjects.push(project);
+        fetchedProjects.push(projectData);
       }
 
       setProjects(fetchedProjects);
@@ -120,13 +130,17 @@ const Projects = () => {
     if (!user) return;
 
     try {
-      const applicationsRef = collection(db, 'applications');
-      const q = query(applicationsRef, where('userId', '==', user.uid));
+      const applicationsRef = collection(db, 'projectApplications');
+      const q = query(
+        applicationsRef,
+        where('userId', '==', user.uid)
+      );
       const applicationsSnapshot = await getDocs(q);
       
       const applications = {};
       applicationsSnapshot.docs.forEach(doc => {
-        applications[doc.data().projectId] = doc.data().status;
+        const data = doc.data();
+        applications[data.projectId] = data.status;
       });
       
       setUserApplications(applications);
@@ -285,9 +299,14 @@ const Projects = () => {
                     <h3 className="text-xl font-semibold text-white mb-2 line-clamp-2">
                       {project.title}
                     </h3>
-                    <p className="text-white/90 text-sm line-clamp-2">
-                      {project.organizationName}
-                    </p>
+                    <div className="flex justify-between items-center">
+                      <p className="text-white/90 text-sm">
+                        {project.organizationName}
+                      </p>
+                      <span className="text-white/90 text-sm">
+                        {project.applicantsCount || 0} applicant{project.applicantsCount !== 1 ? 's' : ''}
+                      </span>
+                    </div>
                   </div>
                 </div>
                 <div className="p-4">
@@ -309,7 +328,7 @@ const Projects = () => {
                   </div>
                   <div className="flex justify-between items-center">
                     <div className="text-sm text-gray-500">
-                      {project.maxDevelopers} developer{project.maxDevelopers !== 1 ? 's' : ''}
+                      {project.maxDevelopers} developer{project.maxDevelopers !== 1 ? 's' : ''} needed
                     </div>
                     {renderApplicationButton(project)}
                   </div>
