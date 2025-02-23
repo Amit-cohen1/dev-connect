@@ -5,6 +5,7 @@ import { db } from '../firebase/config';
 import { collection, query, orderBy, limit, getDocs, where, doc, getDoc, updateDoc } from 'firebase/firestore';
 import { AuthContext } from '../context/AuthContext';
 import axios from 'axios';
+import { DotLottieReact } from '@lottiefiles/dotlottie-react';
 
 const Home = () => {
   const { user } = useContext(AuthContext);
@@ -17,6 +18,8 @@ const Home = () => {
 
   const [technologies, setTechnologies] = useState([]);
   const [hoveredTech, setHoveredTech] = useState(null);
+  const [isLottieLoaded, setIsLottieLoaded] = useState(false);
+  const [lottieError, setLottieError] = useState(false);
 
   const calculateTechnologyStats = (projects) => {
     // Create a map to store technology counts
@@ -174,46 +177,62 @@ const Home = () => {
   return (
     <div className="min-h-screen bg-gray-50">
       {/* Hero Section */}
-      <div
-        className="bg-cover bg-center bg-no-repeat bg-fixed relative"
-        style={{
-          backgroundImage: "url('/HeroBackground.jpg')",
-          minHeight: "80vh",
-        }}
-      >
-        <div className="absolute inset-0 bg-gradient-to-br from-blue-900/90 via-blue-800/85 to-blue-600/80 backdrop-blur-sm"></div>
-        <div className="relative">
-          <div className="max-w-7xl mx-auto py-20 px-4 sm:py-32 sm:px-6 lg:px-8 flex flex-col items-center">
+      <div className="relative min-h-[90vh] flex items-center overflow-hidden">
+        {/* Simple Lottie Background */}
+        <div className="absolute inset-0 z-0">
+          <DotLottieReact
+            src="https://lottie.host/1edd69ce-bf8a-44c8-9918-70b050632264/Y00qRJjKjA.lottie"
+            loop
+            autoplay
+            style={{
+              position: 'absolute',
+              top: '50%',
+              left: '50%',
+              transform: 'translate(-50%, -50%) scale(1.2)',
+              width: '100%',
+              height: '100%',
+              opacity: 0.8,
+            }}
+          />
+          {/* Simple gradient overlay */}
+          <div className="absolute inset-0 bg-gradient-to-b from-white/95 via-white/70 to-white/95" />
+        </div>
+
+        {/* Content */}
+        <div className="relative z-20 w-full">
+          <div className="max-w-7xl mx-auto py-16 px-4 sm:py-24 sm:px-6 lg:px-8">
             <div className="text-center max-w-4xl mx-auto">
-              <h1 className="text-4xl font-extrabold text-white sm:text-5xl sm:tracking-tight lg:text-6xl drop-shadow-lg animate-fade-in-down">
+              <h1 className="text-4xl font-extrabold text-gray-900 sm:text-5xl sm:tracking-tight lg:text-6xl drop-shadow-sm animate-fade-in-down">
                 Empowering Developers,<br/>
-                <span className="text-blue-200">Supporting Non-Profits</span>
+                <span className="text-blue-700">Supporting Non-Profits</span>
               </h1>
-              <p className="mt-8 text-xl text-blue-100 leading-relaxed max-w-3xl mx-auto animate-fade-in-up">
+              <p className="mt-8 text-xl text-gray-800 leading-relaxed max-w-3xl mx-auto animate-fade-in-up font-medium">
                 Connect with meaningful projects, gain real-world experience, and make a difference
                 while building your portfolio. Join our community of passionate developers.
               </p>
               <div className="mt-12 flex flex-col sm:flex-row justify-center gap-4 animate-fade-in">
                 <Link
                   to="/projects"
-                  className="group relative inline-flex items-center justify-center px-8 py-3 bg-white text-blue-600 font-medium rounded-md overflow-hidden transition-all duration-300 ease-out hover:bg-blue-50 hover:scale-105 transform"
+                  className="group relative inline-flex items-center justify-center px-8 py-3 bg-white/90 backdrop-blur-sm text-blue-600 font-medium rounded-md overflow-hidden transition-all duration-300 ease-out hover:bg-blue-50 hover:scale-105 transform shadow-lg"
                 >
                   <span className="relative">Browse Projects</span>
                 </Link>
                 {renderActionButton()}
               </div>
+              
+              {/* Stats with improved visibility */}
               <div className="mt-16 grid grid-cols-2 gap-8 sm:grid-cols-3 animate-fade-in-up">
-                <div className="text-center">
-                  <div className="text-4xl font-bold text-white mb-2">{stats.totalProjects}</div>
-                  <div className="text-blue-200">Total Projects</div>
+                <div className="text-center p-4 rounded-lg bg-white/80 backdrop-blur-sm shadow-lg">
+                  <div className="text-4xl font-bold text-blue-600 mb-2">{stats.totalProjects}</div>
+                  <div className="text-gray-800 font-medium">Total Projects</div>
                 </div>
-                <div className="text-center">
-                  <div className="text-4xl font-bold text-white mb-2">{stats.completedProjects}</div>
-                  <div className="text-blue-200">Completed Projects</div>
+                <div className="text-center p-4 rounded-lg bg-white/80 backdrop-blur-sm shadow-lg">
+                  <div className="text-4xl font-bold text-blue-600 mb-2">{stats.completedProjects}</div>
+                  <div className="text-gray-800 font-medium">Completed Projects</div>
                 </div>
-                <div className="text-center">
-                  <div className="text-4xl font-bold text-white mb-2">{stats.activeDevs}</div>
-                  <div className="text-blue-200">Active Developers</div>
+                <div className="text-center p-4 rounded-lg bg-white/80 backdrop-blur-sm shadow-lg">
+                  <div className="text-4xl font-bold text-blue-600 mb-2">{stats.activeDevs}</div>
+                  <div className="text-gray-800 font-medium">Active Developers</div>
                 </div>
               </div>
             </div>

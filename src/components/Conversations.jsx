@@ -1,5 +1,5 @@
 // src/components/Conversations.js
-import { useState, useEffect, useContext } from 'react';
+import React, { useState, useEffect, useContext } from 'react';
 import { AuthContext } from '../context/AuthContext';
 import { db } from '../firebase/config';
 import { 
@@ -7,6 +7,7 @@ import {
   doc, getDoc 
 } from 'firebase/firestore';
 import MessagingSystem from './MessagingSystem';
+import LoadingSpinner from './LoadingSpinner';
 
 const ConversationList = ({ conversations, selectedId, onSelect }) => (
   <div className="divide-y divide-gray-200">
@@ -112,7 +113,7 @@ const Conversations = () => {
   if (loading) {
     return (
       <div className="flex justify-center items-center min-h-screen">
-        <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600"></div>
+        <LoadingSpinner size={80} />
       </div>
     );
   }

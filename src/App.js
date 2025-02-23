@@ -1,5 +1,5 @@
 // src/App.js
-import { BrowserRouter as Router, Routes, Route } from 'react-router-dom';
+import { BrowserRouter as Router, Routes, Route, Navigate } from 'react-router-dom';
 import { AuthProvider } from './context/AuthContext';
 
 // Import all components and pages
@@ -10,6 +10,7 @@ import Login from './pages/Login';
 import Register from './pages/Register';
 import Projects from './pages/Projects';
 import Profile from './pages/Profile';
+import OrganizationProfile from './pages/OrganizationProfile';
 import OrganizationPortal from './pages/OrganizationPortal';
 import UploadProject from './pages/UploadProject';
 import ProjectDetail from './pages/ProjectDetail';
@@ -25,9 +26,7 @@ function App() {
     <Router>
       <AuthProvider>
         <div className="flex flex-col min-h-screen bg-gray-50">
-          {/* Navbar */}
           <Navbar />
-          {/* Main Content */}
           <main className="flex-grow">
             <Routes>
               {/* Public Routes */}
@@ -42,11 +41,7 @@ function App() {
               {/* Protected Routes */}
               <Route 
                 path="/developer-dashboard" 
-                element={
-                  <PrivateRoute>
-                    <DeveloperDashboard />
-                  </PrivateRoute>
-                } 
+                element={<PrivateRoute><DeveloperDashboard /></PrivateRoute>} 
               />
               <Route 
                 path="/profile" 
@@ -59,31 +54,23 @@ function App() {
 
               {/* Organization Only Routes */}
               <Route 
+                path="/organization-profile" 
+                element={<OrganizationRoute><OrganizationProfile /></OrganizationRoute>} 
+              />
+              <Route 
                 path="/organization-portal" 
-                element={
-                  <OrganizationRoute>
-                    <OrganizationPortal />
-                  </OrganizationRoute>
-                } 
+                element={<OrganizationRoute><OrganizationPortal /></OrganizationRoute>} 
               />
               <Route 
                 path="/upload-project" 
-                element={
-                  <OrganizationRoute>
-                    <UploadProject />
-                  </OrganizationRoute>
-                } 
+                element={<OrganizationRoute><UploadProject /></OrganizationRoute>} 
               />
               <Route 
                 path="/gemini-project-ai" 
-                element={
-                  <OrganizationRoute>
-                    <GeminiProjectAI />
-                  </OrganizationRoute>
-                } 
+                element={<OrganizationRoute><GeminiProjectAI /></OrganizationRoute>} 
               />
 
-              {/* 404 Route - Keep it last */}
+              {/* 404 Route */}
               <Route 
                 path="*" 
                 element={
@@ -95,7 +82,6 @@ function App() {
               />
             </Routes>
           </main>
-          {/* Footer */}
           <Footer />
         </div>
       </AuthProvider>

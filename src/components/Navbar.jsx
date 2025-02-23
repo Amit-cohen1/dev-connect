@@ -121,20 +121,30 @@ const Navbar = () => {
                 </div>
 
                 {userData?.type === 'organization' && (
-                  <Link
-                    to="/organization-portal"
-                    className="bg-blue-100 text-blue-600 px-4 py-2 rounded-md text-sm font-medium hover:bg-blue-200"
-                  >
-                    Organization Portal
-                  </Link>
+                  <>
+                    <Link
+                      to="/organization-portal"
+                      className="bg-blue-100 text-blue-600 px-4 py-2 rounded-md text-sm font-medium hover:bg-blue-200"
+                    >
+                      Organization Portal
+                    </Link>
+                    <Link
+                      to="/organization-profile"
+                      className="text-gray-700 hover:text-blue-600 px-3 py-2 rounded-md text-sm font-medium"
+                    >
+                      Profile
+                    </Link>
+                  </>
                 )}
                 
-                <Link
-                  to="/profile"
-                  className="text-gray-700 hover:text-blue-600 px-3 py-2 rounded-md text-sm font-medium"
-                >
-                  Profile
-                </Link>
+                {userData?.type !== 'organization' && (
+                  <Link
+                    to="/profile"
+                    className="text-gray-700 hover:text-blue-600 px-3 py-2 rounded-md text-sm font-medium"
+                  >
+                    Profile
+                  </Link>
+                )}
                 
                 <button
                   onClick={handleLogout}
@@ -222,22 +232,33 @@ const Navbar = () => {
             {user ? (
               <>
                 {userData?.type === 'organization' && (
-                  <Link
-                    to="/organization-portal"
-                    className="block text-lg bg-blue-50 text-blue-600 px-4 py-3 rounded-md font-medium hover:bg-blue-100"
-                    onClick={() => setIsOpen(false)}
-                  >
-                    Organization Portal
-                  </Link>
+                  <>
+                    <Link
+                      to="/organization-portal"
+                      className="block text-lg bg-blue-50 text-blue-600 px-4 py-3 rounded-md font-medium hover:bg-blue-100"
+                      onClick={() => setIsOpen(false)}
+                    >
+                      Organization Portal
+                    </Link>
+                    <Link
+                      to="/organization-profile"
+                      className="block text-lg text-gray-700 hover:text-blue-600 px-3 py-2 rounded-md font-medium hover:bg-gray-50"
+                      onClick={() => setIsOpen(false)}
+                    >
+                      Profile
+                    </Link>
+                  </>
                 )}
                 
-                <Link
-                  to="/profile"
-                  className="block text-lg text-gray-700 hover:text-blue-600 px-3 py-2 rounded-md font-medium hover:bg-gray-50"
-                  onClick={() => setIsOpen(false)}
-                >
-                  Profile
-                </Link>
+                {userData?.type !== 'organization' && (
+                  <Link
+                    to="/profile"
+                    className="block text-lg text-gray-700 hover:text-blue-600 px-3 py-2 rounded-md font-medium hover:bg-gray-50"
+                    onClick={() => setIsOpen(false)}
+                  >
+                    Profile
+                  </Link>
+                )}
                 
                 <button
                   onClick={() => {

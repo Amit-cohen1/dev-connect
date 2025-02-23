@@ -6,7 +6,9 @@ import { db } from '../firebase/config';
 import { collection, query, where, getDocs, orderBy, doc, updateDoc } from 'firebase/firestore';
 import ProjectApplicationForm from '../components/ProjectApplications';
 import ProjectSkeleton from '../components/ProjectSkeleton';
+import LoadingSpinner from '../components/LoadingSpinner';
 import axios from 'axios';
+import { DotLottieReact } from '@lottiefiles/dotlottie-react';
 
 const Projects = () => {
   const navigate = useNavigate();
@@ -62,15 +64,14 @@ const Projects = () => {
 
   // Fetch projects based on filters
   const fetchProjects = async () => {
-    setFilterChangeLoading(true);
     try {
+      setLoading(true);
+      setFilterChangeLoading(true);
+
       let projectsQuery = collection(db, 'projects');
       const conditions = [];
 
-      if (filters.status) {
-        conditions.push(where('status', '==', filters.status));
-      }
-
+      // Add filters
       if (filters.technology) {
         conditions.push(where('technologies', 'array-contains', filters.technology));
       }
@@ -79,6 +80,11 @@ const Projects = () => {
         conditions.push(where('difficulty', '==', filters.difficulty.toLowerCase()));
       }
 
+      if (filters.status) {
+        conditions.push(where('status', '==', filters.status));
+      }
+
+      // Apply conditions to query
       if (conditions.length > 0) {
         projectsQuery = query(projectsQuery, ...conditions);
       } else {
@@ -86,35 +92,50 @@ const Projects = () => {
       }
 
       const projectsSnapshot = await getDocs(projectsQuery);
-      const fetchedProjects = [];
+      const projectDocs = projectsSnapshot.docs;
 
-      for (const docSnap of projectsSnapshot.docs) {
-        const projectData = { id: docSnap.id, ...docSnap.data() };
+      // Get all project IDs
+      const projectIds = projectDocs.map(doc => doc.id);
 
-        // Get applications count from projectApplications collection
-        const applicationsRef = collection(db, 'projectApplications');
-        const applicationsQuery = query(
-          applicationsRef, 
-          where('projectId', '==', docSnap.id)
-        );
-        const applicationsSnapshot = await getDocs(applicationsQuery);
-        
-        // Update project data with applications count
-        projectData.applicantsCount = applicationsSnapshot.size;
+      // Fetch applications counts for all projects in one query
+      const applicationsRef = collection(db, 'projectApplications');
+      const applicationsQuery = query(
+        applicationsRef,
+        where('projectId', 'in', projectIds)
+      );
+      const applicationsSnapshot = await getDocs(applicationsQuery);
 
-        // Filter by search term if present
-        if (filters.search) {
-          const searchLower = filters.search.toLowerCase();
-          if (
-            !projectData.title.toLowerCase().includes(searchLower) &&
-            !projectData.description.toLowerCase().includes(searchLower)
-          ) {
-            continue;
-          }
+      // Create a map of project ID to application count
+      const applicationCountMap = projectIds.reduce((acc, projectId) => {
+        acc[projectId] = 0;
+        return acc;
+      }, {});
+
+      // Count applications per project
+      applicationsSnapshot.docs.forEach(doc => {
+        const data = doc.data();
+        if (applicationCountMap[data.projectId] !== undefined) {
+          applicationCountMap[data.projectId]++;
         }
+      });
 
-        fetchedProjects.push(projectData);
-      }
+      // Map projects with their application counts
+      const fetchedProjects = projectDocs
+        .map(doc => {
+          const projectData = { id: doc.id, ...doc.data() };
+          projectData.applicantsCount = applicationCountMap[doc.id] || 0;
+          return projectData;
+        })
+        .filter(projectData => {
+          if (filters.search) {
+            const searchLower = filters.search.toLowerCase();
+            return (
+              projectData.title.toLowerCase().includes(searchLower) ||
+              projectData.description.toLowerCase().includes(searchLower)
+            );
+          }
+          return true;
+        });
 
       setProjects(fetchedProjects);
     } catch (error) {
@@ -125,7 +146,7 @@ const Projects = () => {
     }
   };
 
-  // Fetch user's applications
+  // Fetch user's applications from projectApplications collection
   const fetchUserApplications = async () => {
     if (!user) return;
 
@@ -275,8 +296,8 @@ const Projects = () => {
 
         {/* Loading State */}
         {loading ? (
-          <div className="flex justify-center items-center min-h-[400px]">
-            <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-500"></div>
+          <div className="min-h-[400px]">
+            <LoadingSpinner size={80} />
           </div>
         ) : (
           /* Projects Grid */

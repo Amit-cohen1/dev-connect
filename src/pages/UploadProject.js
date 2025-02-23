@@ -3,6 +3,8 @@ import { useNavigate, useLocation } from 'react-router-dom';
 import { db } from '../firebase/config';
 import { collection, addDoc, serverTimestamp } from 'firebase/firestore';
 import { AuthContext } from '../context/AuthContext';
+import { DotLottieReact } from '@lottiefiles/dotlottie-react';
+import LoadingSpinner from '../components/LoadingSpinner';
 
 const UploadProject = () => {
   const { user } = useContext(AuthContext);
@@ -84,11 +86,10 @@ const UploadProject = () => {
         organizationId: user.uid,
         organizationName: user.organizationName || user.displayName,
         status: 'open',
-        applicants: [],
-        assignedDevelopers: [],
+        assignedDevelopers: [], // Only keep assignedDevelopers, remove applicants
         dateCreated: serverTimestamp(),
         dateUpdated: serverTimestamp(),
-        imageUrl: null // Initialize with null so we know it needs to be fetched
+        imageUrl: null
       };
   
       await addDoc(collection(db, 'projects'), projectData);
@@ -417,6 +418,55 @@ const UploadProject = () => {
             </div>
           </label>
         </div>
+
+        <div className="space-y-2">
+          <label className="block text-sm font-medium text-gray-700">
+            Enrollment Type
+          </label>
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+            <label className={`relative flex flex-col p-4 border-2 rounded-xl cursor-pointer transition-all duration-200 
+              ${formData.enrollmentType === 'direct' ? 'border-blue-500 bg-blue-50' : 'border-gray-200 hover:border-blue-200'}`}>
+              <input
+                type="radio"
+                name="enrollmentType"
+                value="direct"
+                checked={formData.enrollmentType === 'direct'}
+                onChange={(e) => setFormData({ ...formData, enrollmentType: e.target.value })}
+                className="sr-only"
+              />
+              <span className="text-lg font-medium mb-2">Open Enrollment</span>
+              <span className="text-sm text-gray-600">Developers can join directly without approval</span>
+            </label>
+
+            <label className={`relative flex flex-col p-4 border-2 rounded-xl cursor-pointer transition-all duration-200 
+              ${formData.enrollmentType === 'application' ? 'border-blue-500 bg-blue-50' : 'border-gray-200 hover:border-blue-200'}`}>
+              <input
+                type="radio"
+                name="enrollmentType"
+                value="application"
+                checked={formData.enrollmentType === 'application'}
+                onChange={(e) => setFormData({ ...formData, enrollmentType: e.target.value })}
+                className="sr-only"
+              />
+              <span className="text-lg font-medium mb-2">Application Required</span>
+              <span className="text-sm text-gray-600">Review and approve developers before they can join</span>
+            </label>
+
+            <label className={`relative flex flex-col p-4 border-2 rounded-xl cursor-pointer transition-all duration-200 
+              ${formData.enrollmentType === 'hybrid' ? 'border-blue-500 bg-blue-50' : 'border-gray-200 hover:border-blue-200'}`}>
+              <input
+                type="radio"
+                name="enrollmentType"
+                value="hybrid"
+                checked={formData.enrollmentType === 'hybrid'}
+                onChange={(e) => setFormData({ ...formData, enrollmentType: e.target.value })}
+                className="sr-only"
+              />
+              <span className="text-lg font-medium mb-2">Hybrid</span>
+              <span className="text-sm text-gray-600">Mix of open spots and application-based positions</span>
+            </label>
+          </div>
+        </div>
       </div>
     </div>
   );
@@ -487,30 +537,13 @@ const UploadProject = () => {
                     } focus:outline-none focus:ring-2 focus:ring-offset-2 transition-colors duration-200 ml-auto`}
                 >
                   {loading ? (
-                    <>
-                      <svg className="animate-spin -ml-1 mr-3 h-5 w-5 text-white" fill="none" viewBox="0 0 24 24">
-                        <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" />
-                        <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z" />
-                      </svg>
+                    <span className="flex items-center">
+                      <LoadingSpinner size={24} className="mr-2" />
                       Creating Project...
-                    </>
+                    </span>
                   ) : (
                     <>
-                      {currentStep === 3 ? (
-                        <>
-                          Create Project
-                          <svg className="ml-2 -mr-1 w-5 h-5" fill="currentColor" viewBox="0 0 20 20">
-                            <path fillRule="evenodd" d="M10.293 3.293a1 1 0 011.414 0l6 6a1 1 0 010 1.414l-6 6a1 1 0 01-1.414-1.414L14.586 11H3a1 1 0 110-2h11.586l-4.293-4.293a1 1 0 010-1.414z" clipRule="evenodd" />
-                          </svg>
-                        </>
-                      ) : (
-                        <>
-                          Continue
-                          <svg className="ml-2 -mr-1 w-5 h-5" fill="currentColor" viewBox="0 0 20 20">
-                            <path fillRule="evenodd" d="M7.293 14.707a1 1 0 010-1.414L10.586 10 7.293 6.707a1 1 0 011.414-1.414l4 4a1 1 0 010 1.414l-4 4a1 1 0 01-1.414 0z" clipRule="evenodd" />
-                          </svg>
-                        </>
-                      )}
+                      {currentStep === 3 ? 'Create Project' : 'Next'}
                     </>
                   )}
                 </button>

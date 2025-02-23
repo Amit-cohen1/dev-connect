@@ -15,6 +15,9 @@ import {
   arrayUnion  
 } from 'firebase/firestore';
 import { sendApplicationStatusNotification } from '../utils/notifications';
+import { Player } from '@lottiefiles/react-lottie-player';
+import { DotLottieReact } from '@lottiefiles/dotlottie-react';
+import LoadingSpinner from '../components/LoadingSpinner';
 
 const ProjectCard = ({ project }) => {
   const statusColors = {
@@ -221,11 +224,7 @@ const OrganizationPortal = () => {
   };
 
   if (loading) {
-    return (
-      <div className="flex justify-center items-center min-h-screen">
-        <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600"></div>
-      </div>
-    );
+    return <LoadingSpinner />;
   }
 
   return (

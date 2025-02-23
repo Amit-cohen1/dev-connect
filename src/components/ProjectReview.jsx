@@ -11,8 +11,9 @@ import {
 } from 'firebase/firestore';
 import { sendNotification, sendSkillsUpdateNotification } from '../utils/notifications';
 import { toast } from 'react-toastify';
+import LoadingSpinner from './LoadingSpinner';
 
-const ProjectReview = ({ projectId, submissionId }) => {
+const ProjectReview = ({ projectId, submissionId, onReviewComplete }) => {
   const { user } = useContext(AuthContext);
   const navigate = useNavigate();
   const [submission, setSubmission] = useState(null);
@@ -108,6 +109,11 @@ const ProjectReview = ({ projectId, submissionId }) => {
         senderName: user.displayName
       });
 
+      // Call onReviewComplete callback if provided
+      if (onReviewComplete) {
+        onReviewComplete();
+      }
+
       // Show success message
       if (newStatus === 'approved') {
         toast.success('Project approved! Developer profile has been updated with completed project and new skills.');
@@ -125,7 +131,11 @@ const ProjectReview = ({ projectId, submissionId }) => {
   };
 
   if (!submission) {
-    return <div>Loading submission...</div>;
+    return (
+      <div className="flex justify-center items-center p-6">
+        <LoadingSpinner size={80} />
+      </div>
+    );
   }
 
   return (

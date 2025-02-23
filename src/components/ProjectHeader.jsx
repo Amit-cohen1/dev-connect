@@ -2,6 +2,34 @@ import React from 'react';
 import { useNavigate } from 'react-router-dom';
 
 const ProjectHeader = ({ project, user, isEditing, editedProject, setEditedProject, onEdit, onDelete, onApply, hasApplied }) => {
+  const canApply = () => {
+    if (!user || user.uid === project.organizationId) return false;
+    if (hasApplied) return false;
+    if (project.status !== 'open') return false;
+    
+    // For hybrid projects, check if direct enrollment is still available
+    if (project.enrollmentType === 'hybrid') {
+      const currentDevelopers = project.assignedDevelopers?.length || 0;
+      const directSpots = Math.floor(project.maxDevelopers / 2);
+      return currentDevelopers < project.maxDevelopers; // Can still apply even if direct spots are full
+    }
+    
+    return true;
+  };
+
+  const getEnrollmentBadge = () => {
+    if (project.enrollmentType === 'direct') {
+      return 'Open Enrollment';
+    } else if (project.enrollmentType === 'application') {
+      return 'Application Required';
+    } else if (project.enrollmentType === 'hybrid') {
+      const currentDevelopers = project.assignedDevelopers?.length || 0;
+      const directSpots = Math.floor(project.maxDevelopers / 2);
+      return currentDevelopers < directSpots ? 'Direct Spots Available' : 'Application Required';
+    }
+    return '';
+  };
+
   return (
     <div className="relative h-96">
       <img
@@ -22,9 +50,18 @@ const ProjectHeader = ({ project, user, isEditing, editedProject, setEditedProje
               <span className="text-white/90">
                 Posted by {project.organizationName}
               </span>
+              {project.enrollmentType && (
+                <span className={`px-4 py-1 rounded-full text-sm font-medium ${
+                  project.enrollmentType === 'hybrid' && project.assignedDevelopers?.length >= Math.floor(project.maxDevelopers / 2)
+                    ? 'bg-yellow-500/80 text-white'
+                    : 'bg-green-500/80 text-white'
+                }`}>
+                  {getEnrollmentBadge()}
+                </span>
+              )}
             </div>
           </div>
-          {user?.uid === project.organizationId && (
+          {user?.uid === project.organizationId ? (
             <div className="flex space-x-3">
               <button
                 onClick={onEdit}
@@ -45,19 +82,20 @@ const ProjectHeader = ({ project, user, isEditing, editedProject, setEditedProje
                 Delete Project
               </button>
             </div>
-          )}
-          {user && user.uid !== project.organizationId && (
-            <button
-              onClick={onApply}
-              disabled={hasApplied}
-              className={`${
-                hasApplied
-                  ? 'bg-gray-300 cursor-not-allowed'
-                  : 'bg-blue-600 hover:bg-blue-700'
-              } text-white px-4 py-2 rounded-md`}
-            >
-              {hasApplied ? 'Already Applied' : 'Apply Now'}
-            </button>
+          ) : (
+            canApply() && (
+              <button
+                onClick={onApply}
+                disabled={hasApplied}
+                className={`${
+                  hasApplied
+                    ? 'bg-gray-300 cursor-not-allowed'
+                    : 'bg-blue-600 hover:bg-blue-700'
+                } text-white px-4 py-2 rounded-md transition-colors duration-200`}
+              >
+                {hasApplied ? 'Already Applied' : 'Apply Now'}
+              </button>
+            )
           )}
         </div>
       </div>

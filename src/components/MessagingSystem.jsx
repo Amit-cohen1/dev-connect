@@ -6,6 +6,7 @@ import {
   addDoc, serverTimestamp, onSnapshot, 
   getDocs, updateDoc, doc 
 } from 'firebase/firestore';
+import LoadingSpinner from './LoadingSpinner';
 
 const Message = ({ message, isOwn, timestamp }) => (
   <div className={`flex ${isOwn ? 'justify-end' : 'justify-start'} mb-4`}>
@@ -109,7 +110,7 @@ const MessagingSystem = ({ projectId, currentUser, otherUser }) => {
   if (loading) {
     return (
       <div className="flex justify-center items-center h-64">
-        <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-600"></div>
+        <LoadingSpinner size={80} />
       </div>
     );
   }

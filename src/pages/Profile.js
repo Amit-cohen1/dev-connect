@@ -5,9 +5,11 @@ import { db, auth } from '../firebase/config';
 import { doc, updateDoc, getDoc } from 'firebase/firestore';
 import { updateProfile } from 'firebase/auth';
 import AvatarSelector from '../components/AvatarSelector';
+import { useNavigate } from 'react-router-dom';
 
 const Profile = () => {
   const { user } = useContext(AuthContext);
+  const navigate = useNavigate();
   const [isEditingName, setIsEditingName] = useState(false);
   const [isEditingAbout, setIsEditingAbout] = useState(false);
   const [showAvatarSelector, setShowAvatarSelector] = useState(false);
@@ -21,6 +23,13 @@ const Profile = () => {
     completedProjects: [],
     joinDate: null
   });
+  const [showShareToast, setShowShareToast] = useState(false);
+
+  useEffect(() => {
+    if (user?.type === 'organization') {
+      navigate('/organization-profile');
+    }
+  }, [user, navigate]);
 
   useEffect(() => {
     const fetchProfileData = async () => {
@@ -130,6 +139,15 @@ const Profile = () => {
     }
   };
 
+  const handleShareProfile = () => {
+    if (!user?.uid) return;
+    const shareUrl = `${window.location.origin}/user/${user.uid}`;
+    navigator.clipboard.writeText(shareUrl).then(() => {
+      setShowShareToast(true);
+      setTimeout(() => setShowShareToast(false), 3000);
+    });
+  };
+
   return (
     <div className="max-w-7xl mx-auto py-6 px-4 sm:px-6 lg:px-8">
       {error && (
@@ -201,18 +219,24 @@ const Profile = () => {
                     </div>
                   </div>
                 ) : (
-                  <div className="flex items-center space-x-2">
-                    <h1 className="text-2xl font-bold text-gray-900">
-                      {profileData.displayName || 'Add your name'}
-                    </h1>
+                  <div className="flex items-center justify-between w-full">
+                    <div>
+                      <h1 className="text-2xl font-bold text-gray-900">
+                        {profileData.displayName || 'Add your name'}
+                      </h1>
+                      <p className="text-sm text-gray-500">{user?.email}</p>
+                      <p className="text-sm text-gray-500">
+                        Joined {profileData.joinDate?.toLocaleDateString()}
+                      </p>
+                    </div>
                     <button
-                      onClick={() => setIsEditingName(true)}
-                      disabled={loading}
-                      className="text-gray-400 hover:text-gray-500"
+                      onClick={handleShareProfile}
+                      className="inline-flex items-center px-4 py-2 border border-transparent text-sm font-medium rounded-md text-white bg-blue-600 hover:bg-blue-700"
                     >
-                      <svg className="h-5 w-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M15.232 5.232l3.536 3.536m-2.036-5.036a2.5 2.5 0 113.536 3.536L6.5 21.036H3v-3.572L16.732 3.732z" />
+                      <svg className="h-5 w-5 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M8.684 13.342C8.886 12.938 9 12.482 9 12c0-.482-.114-.938-.316-1.342m0 2.684a3 3 0 110-2.684m0 2.684l6.632 3.316m-6.632-6l6.632-3.316m0 0a3 3 0 105.367-2.684 3 3 0 00-5.367 2.684zm0 9.316a3 3 0 105.368 2.684 3 3 0 00-5.368-2.684z" />
                       </svg>
+                      Share Profile
                     </button>
                   </div>
                 )}
@@ -393,6 +417,13 @@ const Profile = () => {
           )}
         </div>
       </div>
+
+      {/* Share Toast Notification */}
+      {showShareToast && (
+        <div className="fixed bottom-4 right-4 bg-gray-800 text-white px-6 py-3 rounded-lg shadow-lg animate-fade-in-up">
+          Profile link copied to clipboard!
+        </div>
+      )}
 
       {/* Avatar Selector Modal */}
       {showAvatarSelector && (

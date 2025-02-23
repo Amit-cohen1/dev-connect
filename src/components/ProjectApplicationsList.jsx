@@ -3,27 +3,29 @@ import { getStatusStyles } from '../utils/statusStyles';
 
 const ProjectApplicationsList = ({ applications, isOrganization, onUpdateStatus }) => {
   return (
-    <div className="divide-y divide-gray-200">
+    <div className="p-6">
       {applications.length === 0 ? (
-        <div className="p-6 text-center text-gray-500">
+        <div className="text-center text-gray-500">
           No applications received yet
         </div>
       ) : (
-        applications.map((application) => (
-          <ApplicationCard
-            key={application.id}
-            application={application}
-            isOrganization={isOrganization}
-            onUpdateStatus={onUpdateStatus}
-          />
-        ))
+        <div className="space-y-6">
+          {applications.map((application) => (
+            <ApplicationCard
+              key={application.id}
+              application={application}
+              isOrganization={isOrganization}
+              onUpdateStatus={onUpdateStatus}
+            />
+          ))}
+        </div>
       )}
     </div>
   );
 };
 
 const ApplicationCard = ({ application, isOrganization, onUpdateStatus }) => (
-  <div className="p-6">
+  <div className="bg-white rounded-lg shadow p-6">
     <div className="flex justify-between items-start">
       <div className="flex items-start space-x-4">
         <img
@@ -36,7 +38,7 @@ const ApplicationCard = ({ application, isOrganization, onUpdateStatus }) => (
             {application.userName}
           </h3>
           <p className="mt-1 text-sm text-gray-500">
-            Applied: {application.dateApplied?.toDate().toLocaleDateString()}
+            Applied: {application.dateApplied?.toDate()?.toLocaleDateString() || new Date().toLocaleDateString()}
           </p>
           <p className="mt-2 text-gray-700">{application.coverLetter}</p>
           <div className="mt-4 space-x-4">
@@ -63,23 +65,23 @@ const ApplicationCard = ({ application, isOrganization, onUpdateStatus }) => (
           </div>
         </div>
       </div>
-      {isOrganization ? (
-        <div className="flex items-center space-x-2">
+      <div>
+        {isOrganization ? (
           <select
             value={application.status}
             onChange={(e) => onUpdateStatus(application.id, e.target.value)}
-            className="rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500"
+            className="rounded-md border border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500 px-3 py-1"
           >
             <option value="pending">Pending</option>
             <option value="accepted">Accept</option>
             <option value="rejected">Reject</option>
           </select>
-        </div>
-      ) : (
-        <div className={`px-3 py-1 rounded-full text-sm font-medium ${getStatusStyles(application.status)}`}>
-          {application.status.charAt(0).toUpperCase() + application.status.slice(1)}
-        </div>
-      )}
+        ) : (
+          <div className={`px-3 py-1 rounded-full text-sm font-medium ${getStatusStyles(application.status)}`}>
+            {application.status.charAt(0).toUpperCase() + application.status.slice(1)}
+          </div>
+        )}
+      </div>
     </div>
   </div>
 );

@@ -14,6 +14,7 @@ import {
   doc,
   deleteDoc
 } from 'firebase/firestore';
+import LoadingSpinner from './LoadingSpinner';
 
 const NotificationItem = ({ notification, onMarkAsRead, onDelete }) => {
   const getNotificationContent = () => {
@@ -115,6 +116,7 @@ const NotificationSystem = () => {
   const [notifications, setNotifications] = useState([]);
   const [unreadCount, setUnreadCount] = useState(0);
   const [isOpen, setIsOpen] = useState(false);
+  const [loading, setLoading] = useState(true);
 
   useEffect(() => {
     if (!user) return;
@@ -134,6 +136,7 @@ const NotificationSystem = () => {
       
       setNotifications(notificationsList);
       setUnreadCount(notificationsList.filter(n => !n.read).length);
+      setLoading(false);
     });
 
     return () => unsubscribe();
@@ -312,7 +315,11 @@ const NotificationSystem = () => {
             </div>
 
             <div className="divide-y divide-gray-200">
-              {notifications.length === 0 ? (
+              {loading ? (
+                <div className="flex justify-center items-center h-64">
+                  <LoadingSpinner size={80} />
+                </div>
+              ) : notifications.length === 0 ? (
                 <div className="p-4 text-center text-gray-500">
                   No notifications yet
                 </div>
